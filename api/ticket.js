@@ -5,23 +5,15 @@
 const REDASH_BASE = "https://jarvis.urbanclap.com/api/queries/562171/results.json";
 
 // Simple in-memory cache so we don't pull the 63k-row payload on every lookup.
-// Vercel keeps warm functions around long enough for this to help under load.
 let CACHE = { at: 0, rows: null };
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes; query itself refreshes every 30 min
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
 function cleanCity(raw) {
   if (!raw) return "";
-  // "city_bangalore_v2" -> "bangalore"
-  return String(raw)
-    .replace(/^city_/i, "")
-    .replace(/_v\d+$/i, "")
-    .replace(/_/g, " ")
-    .trim();
+  return String(raw).replace(/^city_/i, "").replace(/_v\d+$/i, "").replace(/_/g, " ").trim();
 }
-
 function cleanSku(raw) {
   if (!raw) return "";
-  // "Native Lock Pro • Space grey" -> "Native Lock Pro"
   return String(raw).split("•")[0].trim();
 }
 
@@ -32,8 +24,16 @@ async function loadRows() {
   const key = process.env.REDASH_API_KEY;
   if (!key) throw new Error("REDASH_API_KEY not configured");
 
-  const res = await fetch(`${REDASH_BASE}?api_key=${encodeURIComponent(key)}`);
-  if (!res.ok) throw new Error(`Redash responded ${res.status}`);
+  const res = await fetch(`${REDASH_BASE}?api_key=${encodeURIComponent(key)}`, {
+    headers: {
+      "User-Agent": "Mozilla/5.0 (compatible; NativeLocksSOP/1.0)",
+      "Accept": "application/json",
+    },
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`Redash responded ${res.status}${body ? ": " + body.slice(0, 180) : ""}`);
+  }
   const data = await res.json();
   const rows = (data && data.query_result && data.query_result.data && data.query_result.data.rows) || [];
   CACHE = { at: now, rows };
@@ -49,8 +49,6 @@ export default async function handler(req, res) {
     }
 
     const rows = await loadRows();
-    // TICKET_ID is not unique across rows, but detail fields are identical per ticket.
-    // Take the first match; dedupe is implicit since we only return one object.
     const match = rows.find((r) => String(r.TICKET_ID).trim() === id);
 
     if (!match) {
@@ -66,7 +64,7 @@ export default async function handler(req, res) {
       ticketId: id,
       sku: cleanSku(match.SKU_NAME),
       skuFull: match.SKU_NAME || "",
-      lockNumber: hasLock ? lockRaw : null, // null => UI forces agent to ask customer
+      lockNumber: hasLock ? lockRaw : null,
       installDate: match.INSTALLATION_DATE || "",
       city: cleanCity(match.CITY),
       rootRequestId: match.ROOT_REQUEST_ID || "",
