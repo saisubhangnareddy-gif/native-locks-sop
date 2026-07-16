@@ -1,84 +1,65 @@
-// Slack escalation for the Native Locks portal.
-// Two-phase so large videos never pass through this server:
-//   POST /api/raise     { text, filesMeta:[{name,length}] }
-//        -> posts the message to the channel, then asks Slack for one upload URL per file
-//        -> returns { ok, channel, ts, uploads:[{name, upload_url, file_id}] }
-//        The BROWSER then PUTs each file's bytes straight to its Slack upload_url.
-//   POST /api/complete  { channel, thread_ts, files:[{file_id, title}] }
-//        -> completes the upload, attaching the media as a threaded reply.
-//
-// SLACK_BOT_TOKEN lives ONLY here as a Vercel env var. Never sent to the browser.
+// Slack escalation for the Native Locks portal — everything runs server-side (no browser->Slack CORS).
+//   POST /api/raise { phase:"post",   text }                          -> posts message, returns { ok, ts }
+//   POST /api/raise { phase:"upload", thread_ts, name, dataB64 }      -> uploads one file into the thread
+// SLACK_BOT_TOKEN lives ONLY here as a Vercel env var.
+// Vercel JSON body limit ~4.5MB, so each base64 file must be < ~4.5MB (< ~3.3MB raw). Photos are fine.
 
 const CHANNEL_ID = process.env.SLACK_CHANNEL_ID || "C07GZK9UKQW";
 
-async function slack(method, token, body, isForm) {
-  const url = `https://slack.com/api/${method}`;
-  const opts = { method: "POST", headers: { Authorization: `Bearer ${token}` } };
-  if (isForm) {
-    opts.headers["Content-Type"] = "application/x-www-form-urlencoded";
-    opts.body = new URLSearchParams(body).toString();
-  } else {
-    opts.headers["Content-Type"] = "application/json; charset=utf-8";
-    opts.body = JSON.stringify(body);
-  }
-  const res = await fetch(url, opts);
+async function slackJSON(method, token, body) {
+  const res = await fetch(`https://slack.com/api/${method}`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json; charset=utf-8" },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json();
+  if (!data.ok) throw new Error(`Slack ${method}: ${data.error || "unknown error"}`);
+  return data;
+}
+async function slackForm(method, token, form) {
+  const res = await fetch(`https://slack.com/api/${method}`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams(form).toString(),
+  });
   const data = await res.json();
   if (!data.ok) throw new Error(`Slack ${method}: ${data.error || "unknown error"}`);
   return data;
 }
 
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    res.status(405).json({ ok: false, error: "POST only" });
-    return;
-  }
+  if (req.method !== "POST") { res.status(405).json({ ok: false, error: "POST only" }); return; }
   const token = process.env.SLACK_BOT_TOKEN;
-  if (!token) {
-    res.status(500).json({ ok: false, error: "SLACK_BOT_TOKEN not configured" });
-    return;
-  }
+  if (!token) { res.status(500).json({ ok: false, error: "SLACK_BOT_TOKEN not configured" }); return; }
 
   try {
-    const { phase } = req.body || {};
+    const body = req.body || {};
+    const phase = body.phase || "post";
 
-    // Phase 2: attach uploaded files into the message thread.
-    if (phase === "complete") {
-      const { thread_ts, files } = req.body;
-      await slack("files.completeUploadExternal", token, {
-        files: JSON.stringify(files.map((f) => ({ id: f.file_id, title: f.title || f.name }))),
-        channel_id: CHANNEL_ID,
-        thread_ts,
+    if (phase === "post") {
+      if (!body.text || !String(body.text).trim()) { res.status(400).json({ ok: false, error: "Empty escalation text" }); return; }
+      const posted = await slackJSON("chat.postMessage", token, {
+        channel: CHANNEL_ID, text: body.text, unfurl_links: false, unfurl_media: false,
+      });
+      res.status(200).json({ ok: true, ts: posted.ts });
+      return;
+    }
+
+    if (phase === "upload") {
+      const { thread_ts, name, dataB64 } = body;
+      if (!dataB64 || !name) { res.status(400).json({ ok: false, error: "Missing file data" }); return; }
+      const bytes = Buffer.from(dataB64, "base64");
+      const u = await slackForm("files.getUploadURLExternal", token, { filename: name, length: String(bytes.length) });
+      const up = await fetch(u.upload_url, { method: "POST", body: bytes });
+      if (!up.ok) throw new Error(`Slack upload PUT ${up.status}`);
+      await slackJSON("files.completeUploadExternal", token, {
+        files: [{ id: u.file_id, title: name }], channel_id: CHANNEL_ID, thread_ts,
       });
       res.status(200).json({ ok: true });
       return;
     }
 
-    // Phase 1: post the escalation message, then reserve upload URLs.
-    const { text, filesMeta } = req.body;
-    if (!text || !String(text).trim()) {
-      res.status(400).json({ ok: false, error: "Empty escalation text" });
-      return;
-    }
-
-    const posted = await slack("chat.postMessage", token, {
-      channel: CHANNEL_ID,
-      text,
-      unfurl_links: false,
-      unfurl_media: false,
-    });
-
-    const uploads = [];
-    for (const f of filesMeta || []) {
-      const u = await slack(
-        "files.getUploadURLExternal",
-        token,
-        { filename: f.name, length: String(f.length) },
-        true
-      );
-      uploads.push({ name: f.name, upload_url: u.upload_url, file_id: u.file_id });
-    }
-
-    res.status(200).json({ ok: true, channel: CHANNEL_ID, ts: posted.ts, uploads });
+    res.status(400).json({ ok: false, error: "Unknown phase" });
   } catch (err) {
     res.status(502).json({ ok: false, error: err.message || "Slack raise failed" });
   }
