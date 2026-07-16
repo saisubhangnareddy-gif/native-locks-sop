@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Native Locks Product Issues SOP</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+  :root{
+    --bg:#f5f7fb;--panel:#ffffff;--panel2:#eef1f7;--line:#e6eaf2;--line2:#dbe1ec;
+    --ink:#2b3242;--ink2:#5c6579;--muted:#97a0b3;
+    --brand:#6b8cff;--brand2:#5578f5;--brandsoft:#eaf0ff;
+    --g:#3aa06a;--gsoft:#e4f4ea;--a:#c08a3e;--asoft:#faf0dd;--r:#d16b7c;--rsoft:#fbe9ed;
+    --ultra:#4bb8cf;--ultrasoft:#e2f4f8;--pro:#a889f0;--prosoft:#f0eafc;
+    --say:#2f7d8f;--saysoft:#e6f5f8;
+    --mono:"SF Mono",ui-monospace,"Cascadia Mono",Menlo,Consolas,monospace;
+    --sans:"Open Sans","Segoe UI",-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;
+    --accent:var(--brand);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--sans);background:var(--bg);color:var(--ink);line-height:1.55;-webkit-font-smoothing:antialiased;min-height:100vh}
+  /* fixed background layer so scrolling never reveals a white gap above */
+  body::before{content:"";position:fixed;inset:0;z-index:-1;background:var(--bg);
+    background-image:radial-gradient(circle at 15% 0%,#e7edfb 0,transparent 42%),radial-gradient(circle at 85% 8%,#e6ecfa 0,transparent 38%);transition:background-image .3s}
+  body.pro::before{background-image:radial-gradient(circle at 15% 0%,#efe9fb 0,transparent 42%),radial-gradient(circle at 85% 8%,#ece7fa 0,transparent 38%)}
+  body.ultra::before{background-image:radial-gradient(circle at 15% 0%,#e2f2f6 0,transparent 42%),radial-gradient(circle at 85% 8%,#e7edfb 0,transparent 38%)}
+  button{font-family:var(--sans);cursor:pointer}
+  .wrap{max-width:1120px;margin:0 auto;padding:26px 22px 80px}
+  .top{display:flex;align-items:center;gap:14px;margin-bottom:20px}
+  .logo{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--ultra),var(--pro));display:grid;place-items:center;font-size:22px;box-shadow:0 4px 16px rgba(110,140,255,.22)}
+  .top h1{font-size:20px;font-weight:800;letter-spacing:-.01em}
+  .top .sub{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.04em}
+  .top .upd{font-size:12px;color:var(--muted);font-family:var(--mono)}
+  .topright{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+  .whoami{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink2);font-weight:700}
+  .whoami img{width:26px;height:26px;border-radius:50%}
+  .whoami button{border:0;background:transparent;color:var(--muted);font-size:11px;text-decoration:underline}
+  .toggle{display:inline-flex;background:var(--panel);border:1px solid var(--line2);border-radius:13px;padding:5px;margin-bottom:18px;gap:4px}
+  .toggle button{border:0;background:transparent;color:var(--ink2);font-weight:700;font-size:14px;padding:10px 22px;border-radius:9px;transition:.15s;display:flex;align-items:center;gap:8px}
+  .toggle button .tdot{width:9px;height:9px;border-radius:50%;background:var(--muted)}
+  .toggle button.on{color:#fff}
+  .toggle button[data-sku="ultra"].on{background:var(--ultra)}.toggle button[data-sku="ultra"].on .tdot{background:#fff}
+  .toggle button[data-sku="pro"].on{background:var(--pro)}.toggle button[data-sku="pro"].on .tdot{background:#fff}
+  .searchwrap{position:relative;margin-bottom:14px}
+  .searchwrap input{width:100%;background:var(--panel);border:1px solid var(--line2);border-radius:13px;color:var(--ink);font-size:16px;padding:15px 16px 15px 46px;outline:none;transition:.15s}
+  .searchwrap input::placeholder{color:var(--muted)}
+  .searchwrap input:focus{border-color:var(--accent)}
+  .searchwrap .mag{position:absolute;left:16px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:18px}
+  .flashbanner{background:linear-gradient(120deg,var(--prosoft),#f3eefd);border:1px solid #e0d6f5;border-radius:14px;padding:14px 17px;margin-bottom:16px;display:flex;gap:13px;align-items:flex-start}
+  .flashbanner.hide{display:none}
+  .flashbanner .ic{flex:none;width:32px;height:32px;border-radius:9px;background:var(--pro);color:#fff;display:grid;place-items:center;font-size:16px}
+  .flashbanner .ftx{font-size:13px;color:var(--ink2);line-height:1.5}
+  .flashbanner .fbody b{color:var(--ink)}
+  .flashbanner .hd{font-size:13px;font-weight:800;color:#7a63e6;margin-bottom:3px;text-transform:uppercase;letter-spacing:.03em}
+  .flashbanner .frefs{display:flex;gap:12px;margin-top:12px;flex-wrap:wrap}
+  .flashbanner .fref{display:block;width:180px;background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden;text-decoration:none;transition:.14s}
+  .flashbanner .fref:hover{border-color:var(--pro);transform:translateY(-1px);box-shadow:0 6px 18px rgba(120,99,230,.14)}
+  .flashbanner .fref img{width:100%;height:104px;object-fit:cover;display:block;background:var(--panel2)}
+  .flashbanner .fref span{display:block;padding:8px 11px;font-size:12px;font-weight:700;color:var(--ink)}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--ink2);margin-bottom:18px;align-items:center}
+  .legend span{display:flex;align-items:center;gap:7px}
+  .dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+  .dg{background:var(--g)}.da{background:var(--a)}.dr{background:var(--r)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:13px}
+  .tile{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 17px;text-align:left;transition:.15s;display:flex;flex-direction:column;gap:9px;position:relative;overflow:hidden}
+  .tile:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 8px 24px rgba(80,100,160,.13)}
+  .tile .bar{position:absolute;left:0;top:0;bottom:0;width:4px}
+  .tile .row1{display:flex;align-items:center;gap:8px}
+  .tile .rank{font-family:var(--mono);font-size:11px;color:var(--muted);background:var(--panel2);padding:2px 8px;border-radius:6px}
+  .tile .skutag{font-size:10px;font-weight:800;padding:2px 8px;border-radius:6px;text-transform:uppercase;letter-spacing:.03em}
+  .skutag-ultra{background:var(--ultrasoft);color:#2f8ba1}.skutag-pro{background:var(--prosoft);color:#7a63e6}
+  .tile .sev{margin-left:auto;font-size:10px;font-weight:800;padding:3px 9px;border-radius:20px;text-transform:uppercase;letter-spacing:.03em}
+  .sev-g{background:var(--gsoft);color:var(--g)}.sev-a{background:var(--asoft);color:var(--a)}.sev-r{background:var(--rsoft);color:var(--r)}
+  .tile h3{font-size:16px;font-weight:700;line-height:1.3}
+  .tile .say{font-size:13px;color:var(--ink2);line-height:1.4}
+  .tile .go{margin-top:3px;font-size:12.5px;color:var(--accent);font-weight:700}
+  .page{display:none;animation:fade .22s ease}.page.on{display:block}#home.on{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .back{display:inline-flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line2);color:var(--ink);font-size:14px;font-weight:700;padding:10px 16px;border-radius:10px;margin-bottom:16px;transition:.14s}
+  .back:hover{border-color:var(--accent);background:var(--panel2)}
+  .dwrap{margin-bottom:18px}
+  .dwrap.has-media{display:grid;grid-template-columns:1fr 260px;gap:24px;align-items:start}
+  .dwrap.has-media .media{grid-column:2;grid-row:1/span 99;position:sticky;top:16px}
+  .dwrap.has-media .dhead,.dwrap.has-media .cols,.dwrap.has-media .dfoot{grid-column:1}
+  .dfoot{margin-top:2px}
+  .dwrap .dhead{margin-bottom:16px}
+  .dhead .dtags{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+  .sevpill{font-size:13px;font-weight:700;padding:5px 13px;border-radius:16px;display:inline-flex;align-items:center;gap:7px}
+  .dtitle{font-size:24px;font-weight:800;letter-spacing:-.02em;margin-bottom:6px;line-height:1.2}
+  .dsay{font-size:15px;color:var(--ink2)}
+  .dsay .cslabel{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);display:block;margin-bottom:2px}
+  .media{width:100%;background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 4px 16px rgba(80,100,160,.1)}
+  .media .mh{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding:11px 14px 0}
+  .media iframe{width:100%;height:170px;border:0;display:block;margin-top:8px}
+  .media .mvid{width:100%;max-height:230px;display:block;margin-top:8px;background:#000}
+  .media .mimg{width:100%;display:block;margin-top:8px;border-top:1px solid var(--line)}
+  .media .mcap{font-size:11.5px;color:var(--muted);padding:6px 14px 10px;text-align:center}
+  .media a.mlink{display:block;margin:10px 12px 12px;padding:9px 14px;font-size:13px;font-weight:700;color:#fff;background:var(--accent);border-radius:9px;text-align:center;text-decoration:none}
+  .media a.mlink:hover{filter:brightness(.95)}
+  @media(max-width:760px){.dwrap.has-media{grid-template-columns:1fr}.dwrap.has-media .media{grid-column:1;grid-row:auto;position:static;order:-1}}
+  .cols{display:grid;grid-template-columns:1fr;gap:0}
+  .step{background:var(--panel);border:1px solid var(--line);border-radius:14px;margin-bottom:13px;overflow:hidden}
+  .step .qh{display:flex;gap:12px;align-items:flex-start;padding:14px 17px;background:var(--panel2);border-bottom:1px solid var(--line)}
+  .step .qh .qn{flex:none;width:24px;height:24px;border-radius:7px;background:var(--accent);color:#fff;display:grid;place-items:center;font-size:13px;font-weight:800}
+  .step .qh p{font-size:15.5px;font-weight:600;color:var(--ink);line-height:1.4;white-space:pre-line}
+  .branches{padding:4px 17px 12px}
+  .br{padding:12px 0}
+  .br:not(:last-child){border-bottom:1px dashed var(--line2)}
+  .br .brtop{display:flex;gap:11px;align-items:flex-start}
+  .br .yn{flex:none;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;padding:4px 10px;border-radius:8px;text-align:center;white-space:nowrap}
+  .yn-y{background:var(--gsoft);color:var(--g)}.yn-n{background:var(--rsoft);color:var(--r)}.yn-do{background:var(--brandsoft);color:var(--brand2)}
+  .br .act{font-size:14.5px;line-height:1.5;color:var(--ink);white-space:pre-line}
+  .br .act b{color:#000}
+  .cust{margin:9px 0 0 0;background:var(--saysoft);border:1px solid #cfe8ee;border-radius:10px;padding:10px 13px;display:flex;gap:9px;align-items:flex-start}
+  .cust .ci{flex:none;font-size:14px}
+  .cust .ct{font-size:13.5px;line-height:1.45;color:#215863}
+  .cust .ct b{color:#163f47}
+  .powbox{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:14px;padding:16px 19px;margin-top:6px;box-shadow:0 4px 16px rgba(80,100,160,.08)}
+  .powbox .powh{display:flex;align-items:center;gap:9px;font-size:12px;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:.05em;margin-bottom:11px}
+  .powbox .powh .pi{font-size:15px}
+  .powbox ul{margin:0 0 0 20px;color:var(--ink);font-size:14px;font-weight:600}
+  .powbox ul li{margin-bottom:5px}
+  .powbox .pownote{margin-top:12px;padding-top:11px;border-top:1px dashed var(--line2);font-size:12.5px;color:var(--ink2);font-weight:700}
+  .raisebtn{display:inline-flex;align-items:center;gap:9px;margin-top:14px;background:var(--accent);color:#fff;border:0;font-size:15px;font-weight:800;padding:13px 22px;border-radius:11px;box-shadow:0 6px 18px rgba(107,140,255,.28);transition:.14s}
+  .raisebtn:hover{filter:brightness(.96);transform:translateY(-1px)}
+  .side{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:17px 18px;margin-top:14px}
+  .side h4{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:12px;font-weight:800}
+  .side .poc{display:flex;flex-wrap:wrap;gap:16px}
+  .side .poc .p{display:flex;align-items:center;gap:8px;font-size:13px}
+  .side .poc .p .av{width:26px;height:26px;border-radius:50%;flex:none}
+  .side .poc .p .avimg{object-fit:cover;background:var(--panel2)}
+  .side .poc .p span.av{color:#fff;font-size:10px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;letter-spacing:.02em}
+  .side .poc .p .rl{color:var(--muted);font-size:11px}
+  .side .poc .p .badge{font-size:9px;font-weight:800;padding:1px 6px;border-radius:7px;text-transform:uppercase}
+  .b-prim{background:var(--gsoft);color:var(--g)}.b-sec{background:var(--panel2);color:var(--ink2)}
+  .footer{margin-top:30px;padding-top:18px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted);text-align:center;line-height:1.9}
+  .footer .contact{color:var(--ink2)}
+  .footer .contact b{color:var(--ink)}
+  .footer .contact a{color:var(--accent);text-decoration:none}
+  .footer .contact a:hover{text-decoration:underline}
+  .empty{grid-column:1/-1;text-align:center;color:var(--muted);padding:40px;font-size:14px}
+
+  /* ---- login gate ---- */
+  #gate{position:fixed;inset:0;z-index:200;display:grid;place-items:center;overflow:hidden;
+    background:radial-gradient(circle at 20% 15%,#eaf0ff 0,transparent 45%),radial-gradient(circle at 82% 12%,#f0eafc 0,transparent 42%),linear-gradient(160deg,#eef2fe,#f4eefe 60%,#eaf5f8)}
+  #gate.hide{display:none}
+  #gate::before,#gate::after{content:"";position:absolute;border-radius:50%;filter:blur(8px);opacity:.5}
+  #gate::before{width:280px;height:280px;background:radial-gradient(circle,#cfe0ff,transparent 70%);top:-60px;left:-40px}
+  #gate::after{width:320px;height:320px;background:radial-gradient(circle,#e6d8fb,transparent 70%);bottom:-80px;right:-60px}
+  .gatecard{position:relative;background:rgba(255,255,255,.92);backdrop-filter:blur(6px);border:1px solid #e7ecfa;border-radius:24px;padding:44px 46px 40px;max-width:420px;width:calc(100% - 40px);text-align:center;box-shadow:0 24px 70px rgba(80,100,160,.20)}
+  .gatecard .glogo{width:64px;height:64px;border-radius:18px;background:linear-gradient(135deg,var(--ultra),var(--pro));display:grid;place-items:center;font-size:32px;margin:0 auto 20px;box-shadow:0 10px 26px rgba(120,140,240,.32)}
+  .gatecard h2{font-size:23px;font-weight:800;letter-spacing:-.01em;margin-bottom:8px}
+  .gatecard p{font-size:14px;color:var(--ink2);margin-bottom:26px;line-height:1.5}
+  .gatecard .gbtn{display:flex;justify-content:center;min-height:44px}
+  .gatecard .gerr{color:var(--r);font-size:12.5px;font-weight:700;margin-top:16px;min-height:16px}
+  .gatecard .gnote{margin-top:22px;padding-top:18px;border-top:1px solid var(--line);font-size:11.5px;color:var(--muted);display:flex;align-items:center;justify-content:center;gap:7px}
+  .gatecard .gnote span{display:inline-flex;align-items:center;gap:5px}
+
+  /* ---- escalation modal ---- */
+  .modal{position:fixed;inset:0;background:rgba(30,38,56,.5);display:none;z-index:150;padding:28px;overflow-y:auto}
+  .modal.on{display:block}
+  .msheet{max-width:640px;margin:0 auto;background:#fff;border-radius:18px;box-shadow:0 24px 70px rgba(30,40,70,.32);overflow:hidden}
+  .mtop{display:flex;align-items:center;gap:12px;padding:18px 22px;border-bottom:1px solid var(--line);background:var(--panel2)}
+  .mtop h3{font-size:16px;font-weight:800;flex:1}
+  .mtop .mclose{border:0;background:transparent;font-size:22px;color:var(--muted);line-height:1}
+  .mbody{padding:20px 22px}
+  .fetchrow{display:flex;gap:10px;margin-bottom:6px}
+  .fetchrow input{flex:1;border:1px solid var(--line2);border-radius:10px;padding:12px 14px;font-size:15px;font-family:var(--mono);outline:none}
+  .fetchrow input:focus{border-color:var(--accent)}
+  .fetchrow button{background:var(--accent);color:#fff;border:0;font-weight:800;font-size:14px;padding:0 20px;border-radius:10px;white-space:nowrap}
+  .fetchrow button:disabled{opacity:.5}
+  .fetchmsg{font-size:12.5px;font-weight:700;min-height:17px;margin-bottom:14px}
+  .fetchmsg.err{color:var(--r)}.fetchmsg.ok{color:var(--g)}.fetchmsg.busy{color:var(--ink2)}
+  .fld{margin-bottom:14px}
+  .fld label{display:block;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:5px}
+  .fld input,.fld textarea,.fld select{width:100%;border:1px solid var(--line2);border-radius:9px;padding:10px 12px;font-size:14px;font-family:var(--sans);outline:none;color:var(--ink)}
+  .fld input:focus,.fld textarea:focus{border-color:var(--accent)}
+  .fld input[readonly]{background:var(--panel2);color:var(--ink2)}
+  .fld input.needask{border-color:var(--a);background:var(--asoft)}
+  .fld textarea{resize:vertical;min-height:64px}
+  .fld .hint{font-size:11.5px;color:var(--muted);margin-top:4px}
+  .fld .hint.warn{color:var(--a);font-weight:700}
+  .twocol{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line2);border-radius:20px;padding:5px 12px;font-size:12.5px;font-weight:700;color:var(--ink2);background:#fff;cursor:pointer;user-select:none}
+  .chip.on{background:var(--brandsoft);border-color:var(--brand);color:var(--brand2)}
+  .chip .cx{font-size:11px;opacity:.6}
+  .droparea{border:2px dashed var(--line2);border-radius:11px;padding:16px;text-align:center;color:var(--muted);font-size:13px;cursor:pointer;transition:.14s}
+  .droparea:hover{border-color:var(--accent);color:var(--ink2)}
+  .filelist{margin-top:10px;display:flex;flex-direction:column;gap:6px}
+  .fileitem{display:flex;align-items:center;gap:9px;font-size:13px;background:var(--panel2);border-radius:8px;padding:7px 11px}
+  .fileitem .fn{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .fileitem .fsz{color:var(--muted);font-size:11.5px}
+  .fileitem .frm{border:0;background:transparent;color:var(--r);font-weight:800;font-size:14px}
+  .preview{background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:13px 15px;font-family:var(--mono);font-size:12px;white-space:pre-wrap;color:var(--ink2);max-height:190px;overflow-y:auto;margin-top:6px}
+  .mfoot{padding:16px 22px;border-top:1px solid var(--line);display:flex;align-items:center;gap:12px;background:var(--panel2)}
+  .mfoot .sendbtn{background:var(--g);color:#fff;border:0;font-weight:800;font-size:15px;padding:13px 26px;border-radius:11px;display:inline-flex;align-items:center;gap:9px}
+  .mfoot .sendbtn:disabled{opacity:.45;cursor:not-allowed}
+  .mfoot .gatewarn{font-size:12px;color:var(--a);font-weight:700}
+  .mfoot .sok{font-size:13px;font-weight:700;color:var(--g)}
+  .mfoot .sok a{color:var(--brand2)}
+
+  /* ============================================================
+     DARK "SMART-TECH" MODE — activated by body.dark.
+     Light mode (default) is unchanged. ============================================================ */
+  .modetoggle{border:1px solid var(--line2);background:var(--panel);color:var(--ink2);font-size:12px;font-weight:700;padding:6px 12px;border-radius:20px;display:inline-flex;align-items:center;gap:6px;transition:.15s}
+  .modetoggle:hover{border-color:var(--accent)}
+  body.dark{
+    --bg:#0a0e1a;--panel:rgba(20,27,45,.72);--panel2:rgba(34,44,72,.55);--line:rgba(90,110,160,.20);--line2:rgba(110,135,195,.32);
+    --ink:#e9edfa;--ink2:#a6b2ce;--muted:#6f7c9e;
+    --brand:#5b8cff;--brand2:#8fb0ff;--brandsoft:rgba(91,140,255,.16);
+    --g:#37d6a0;--gsoft:rgba(55,214,160,.14);--a:#e6b256;--asoft:rgba(230,178,86,.14);--r:#ff6f90;--rsoft:rgba(255,111,144,.14);
+    --ultra:#33e1e1;--ultrasoft:rgba(51,225,225,.14);--pro:#bd8cff;--prosoft:rgba(189,140,255,.16);
+    --say:#40d2e2;--saysoft:rgba(64,210,226,.10);--accent:var(--ultra);
+  }
+  body.dark.pro{--accent:var(--pro)} body.dark.ultra{--accent:var(--ultra)}
+  body.dark::before{background:
+    radial-gradient(circle at 16% 10%,rgba(51,225,225,.12) 0,transparent 40%),
+    radial-gradient(circle at 86% 6%,rgba(189,140,255,.13) 0,transparent 42%),
+    radial-gradient(circle at 50% 108%,rgba(91,140,255,.12) 0,transparent 55%),
+    linear-gradient(160deg,#0a0e1a,#0b1120 55%,#0a1018)}
+  body.dark::after{content:"";position:fixed;inset:-2px;z-index:-1;opacity:.45;
+    background-image:linear-gradient(rgba(120,150,220,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(120,150,220,.06) 1px,transparent 1px);
+    background-size:46px 46px;animation:gridflow 22s linear infinite;
+    mask-image:radial-gradient(circle at 50% 18%,#000 0,transparent 78%);-webkit-mask-image:radial-gradient(circle at 50% 18%,#000 0,transparent 78%)}
+  @keyframes gridflow{to{background-position:46px 46px}}
+  body.dark .logo{box-shadow:0 0 22px rgba(51,225,225,.5),0 4px 16px rgba(120,90,255,.35)}
+  body.dark .top h1{background:linear-gradient(90deg,#eafcff,#cbd6ff);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  body.dark .toggle,body.dark .searchwrap input,body.dark .tile,body.dark .step,body.dark .powbox,body.dark .side,body.dark .media,body.dark .back,body.dark .flashbanner{backdrop-filter:blur(11px)}
+  body.dark .toggle button.on{color:#04121a}
+  body.dark .toggle button[data-sku="ultra"].on{box-shadow:0 0 18px rgba(51,225,225,.45)}
+  body.dark .toggle button[data-sku="pro"].on{box-shadow:0 0 18px rgba(189,140,255,.45)}
+  body.dark .toggle button[data-sku="ultra"].on .tdot,body.dark .toggle button[data-sku="pro"].on .tdot{background:#04121a}
+  body.dark .searchwrap input:focus{box-shadow:0 0 0 3px rgba(51,225,225,.15)}
+  body.dark .searchwrap .mag{color:var(--accent)}
+  body.dark .tile{transition:.18s}
+  body.dark .tile:hover{transform:translateY(-3px);box-shadow:0 0 24px rgba(51,225,225,.18)}
+  body.dark .tile .bar{box-shadow:0 0 12px currentColor}
+  body.dark .tile .rank{color:var(--accent)}
+  body.dark .tile h3{color:var(--ink)}
+  body.dark .skutag-ultra{color:var(--ultra)} body.dark .skutag-pro{color:var(--pro)}
+  body.dark .flashbanner{border-color:rgba(189,140,255,.3)}
+  body.dark .flashbanner .ic{color:#180a2a;box-shadow:0 0 16px rgba(189,140,255,.5)}
+  body.dark .flashbanner .hd{color:var(--pro)}
+  body.dark .flashbanner .fref{background:var(--panel2)}
+  body.dark .step .qh .qn{color:#04121a;box-shadow:0 0 12px rgba(51,225,225,.4)}
+  body.dark .br .act b{color:#fff}
+  body.dark .cust{border-color:rgba(64,210,226,.3)}
+  body.dark .cust .ct{color:#bfeef5} body.dark .cust .ct b{color:#eafcff}
+  body.dark .powbox{border-left-width:3px;box-shadow:0 0 24px rgba(51,225,225,.10)}
+  body.dark .raisebtn{background:linear-gradient(135deg,var(--ultra),var(--brand));color:#04121a;box-shadow:0 0 24px rgba(51,225,225,.4)}
+  body.dark .raisebtn:hover{filter:brightness(1.08);box-shadow:0 0 34px rgba(51,225,225,.6)}
+  body.dark .side .poc .p .rl{color:var(--muted)}
+  body.dark .modal{background:rgba(4,8,18,.72);backdrop-filter:blur(4px)}
+  body.dark .msheet{background:linear-gradient(180deg,rgba(22,30,50,.96),rgba(14,20,36,.96));border:1px solid var(--line2)}
+  body.dark .fetchrow input,body.dark .fld input,body.dark .fld textarea,body.dark .fld select{background:rgba(10,14,26,.55);color:var(--ink)}
+  body.dark .fetchrow input:focus,body.dark .fld input:focus,body.dark .fld textarea:focus{box-shadow:0 0 0 3px rgba(51,225,225,.14)}
+  body.dark .fetchrow button{background:linear-gradient(135deg,var(--ultra),var(--brand));color:#04121a;box-shadow:0 0 16px rgba(51,225,225,.35)}
+  body.dark .fld input[readonly]{background:rgba(30,40,64,.5)}
+  body.dark .chip{background:rgba(20,27,45,.6)}
+  body.dark .chip.on{box-shadow:0 0 12px rgba(91,140,255,.3)}
+  body.dark .droparea:hover{background:rgba(51,225,225,.05)}
+  body.dark .preview{background:rgba(6,10,20,.7)}
+  body.dark .mfoot .sendbtn{background:linear-gradient(135deg,var(--g),#2ea885);color:#04150e;box-shadow:0 0 18px rgba(55,214,160,.4)}
+  body.dark .mfoot .sendbtn:disabled{box-shadow:none}
+  body.dark #gate{background:radial-gradient(circle at 20% 15%,rgba(51,225,225,.14) 0,transparent 45%),radial-gradient(circle at 82% 12%,rgba(189,140,255,.16) 0,transparent 42%),radial-gradient(circle at 50% 108%,rgba(91,140,255,.12) 0,transparent 55%),linear-gradient(160deg,#0a0e1a,#0b1120 60%,#0a1018)}
+  body.dark #gate::before{background:radial-gradient(circle,rgba(51,225,225,.4),transparent 70%)}
+  body.dark #gate::after{background:radial-gradient(circle,rgba(189,140,255,.4),transparent 70%)}
+  body.dark .gatecard{background:linear-gradient(180deg,rgba(22,30,52,.85),rgba(12,18,34,.9));border:1px solid var(--line2);box-shadow:0 0 0 1px rgba(120,160,255,.1),0 30px 80px rgba(0,0,0,.55)}
+  body.dark .gatecard .glogo{box-shadow:0 0 30px rgba(51,225,225,.5),0 0 60px rgba(189,140,255,.3)}
+  body.dark .gatecard h2{background:linear-gradient(90deg,#eafcff,#cbd6ff);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+</style>
+</head>
+<body>
+
+<!-- ================= LOGIN GATE ================= -->
+<div id="gate">
+  <div class="gatecard">
+    <div class="glogo">🔐</div>
+    <h2>Native Locks SOP</h2>
+    <p>Sign in with your Urban Company account to access the POD resolution portal.</p>
+    <div class="gbtn"><div id="gbtn"></div></div>
+    <div class="gerr" id="gerr"></div>
+    <div class="gnote"><span>🔒 Urban Company accounts only</span></div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="top">
+    <div class="logo">🔐</div>
+    <div><h1>Native Locks Product Issues SOP</h1><div class="sub">POD resolution guide</div></div>
+    <div class="topright">
+      <div class="upd">Ordered by frequency</div>
+      <button class="modetoggle" id="modetoggle" onclick="toggleMode()">🌙 Dark mode</button>
+      <div class="whoami" id="whoami" style="display:none"></div>
+    </div>
+  </div>
+
+  <div id="home" class="page on">
+    <div class="toggle" id="toggle">
+      <button data-sku="ultra" class="on"><span class="tdot"></span>Lock Ultra</button>
+      <button data-sku="pro"><span class="tdot"></span>Lock Pro</button>
+    </div>
+    <div class="flashbanner hide" id="flash">
+      <div class="ic">⚡</div>
+      <div class="ftx"><div class="hd">Lock Pro — the flashing rule</div>
+        <div class="fbody">A technician firmware update (flashing) fixes several Lock Pro issues: mortise not unlocking, lock opening on its own, continuous lock-bell notifications, and speaker noise. <b>Flashing works only on New FP SKU locks — check the reference image. Older SKU locks need a mortise replacement instead.</b></div>
+        <div class="frefs">
+          <a class="fref" href="images/firmware-flasher.jpeg" target="_blank" rel="noopener">
+            <img src="images/firmware-flasher.jpeg" alt="Firmware flasher" onerror="this.style.display='none'">
+            <span>Firmware flasher</span></a>
+          <a class="fref" href="images/old-vs-new-sku.png" target="_blank" rel="noopener">
+            <img src="images/old-vs-new-sku.png" alt="Old vs New SKU" onerror="this.style.display='none'">
+            <span>Old vs New SKU (fingerprint batch)</span></a>
+        </div>
+      </div>
+    </div>
+    <div class="searchwrap"><span class="mag">🔍</span><input id="search" placeholder="Type what the customer said..." autocomplete="off"></div>
+    <div class="legend">
+      <span><span class="dot dg"></span>Usually solved on call</span>
+      <span><span class="dot da"></span>Sometimes solved on call</span>
+      <span><span class="dot dr"></span>Follow all the steps</span>
+      <span style="margin-left:auto;color:var(--muted)">Most common issues first</span>
+    </div>
+    <div class="grid" id="grid"></div>
+  </div>
+
+  <div id="details"></div>
+  <div class="footer">Native Locks SOP<br><span class="contact">Facing any issue? Contact <b>Subhang Reddy</b> · <a href="mailto:subhangreddy@urbancompany.com">subhangreddy@urbancompany.com</a></span></div>
+</div>
+
+<!-- ================= ESCALATION MODAL ================= -->
+<div class="modal" id="modal">
+  <div class="msheet">
+    <div class="mtop"><h3 id="mtitle">Raise on Slack</h3><button class="mclose" onclick="closeModal()">×</button></div>
+    <div class="mbody">
+      <div class="fld"><label>Ticket ID</label>
+        <div class="fetchrow">
+          <input id="f-ticket" placeholder="Paste the POD ticket ID" autocomplete="off">
+          <button id="f-fetch" onclick="fetchTicket()">⚡ Fetch from ops</button>
+        </div>
+        <div class="fetchmsg" id="f-msg"></div>
+      </div>
+
+      <div class="twocol">
+        <div class="fld"><label>SKU</label><input id="f-sku" readonly></div>
+        <div class="fld"><label>Installation Date</label><input id="f-install" readonly></div>
+      </div>
+      <div class="twocol">
+        <div class="fld"><label>City</label><input id="f-city" readonly></div>
+        <div class="fld"><label>Lock Serial Number <span style="color:var(--r)">*</span></label>
+          <input id="f-lock" placeholder="—">
+          <div class="hint" id="f-lock-hint"></div>
+        </div>
+      </div>
+
+      <div class="fld"><label>Root Request ID</label><input id="f-root" readonly></div>
+      <div class="fld"><label>Order ID</label><input id="f-order" readonly></div>
+
+      <div class="fld"><label>Issue Bucket</label><input id="f-bucket"></div>
+      <div class="fld"><label>Issue Description</label><textarea id="f-desc" placeholder="What the customer reported and what was tried"></textarea></div>
+      <div class="fld"><label>POD escalation time</label><input id="f-tat" readonly></div>
+
+      <div class="fld"><label>Primary PoC</label><div class="chips" id="f-prim"></div></div>
+      <div class="fld"><label>Secondary PoC</label><div class="chips" id="f-sec"></div></div>
+
+      <div class="fld"><label>Proofs (images / videos) <span style="color:var(--r)">*</span></label>
+        <div class="droparea" id="f-drop" onclick="document.getElementById('f-files').click()">
+          Click to attach photos / videos, or drag them here
+        </div>
+        <input type="file" id="f-files" accept="image/*,video/*" multiple style="display:none">
+        <div class="filelist" id="f-filelist"></div>
+        <div class="hint" id="f-proof-hint">At least one proof is required before sending.</div>
+      </div>
+
+      <div class="fld"><label>Message preview</label><div class="preview" id="f-preview"></div></div>
+    </div>
+    <div class="mfoot">
+      <button class="sendbtn" id="f-send" onclick="sendRaise()" disabled>📤 Send to Slack</button>
+      <span class="gatewarn" id="f-gatewarn"></span>
+      <span class="sok" id="f-sok"></span>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ====== CONFIG (set at deploy time) ====== */
+const GOOGLE_CLIENT_ID = "27461887444-evq312gdun2fu9i7ls9m3a99tnbn35p8.apps.googleusercontent.com";
+
+const POCS={
+  manu:{n:"Manuranjan",r:"Revisit / replacement",in:"M",c:"#6b8cff",id:"U0B99EPHE5P",av:"https://ca.slack-edge.com/T034MTGTM-U0B99EPHE5P-gc1203c4c59f-72"},
+  harsha:{n:"Harshavardhan",r:"Ultra tech lead",in:"H",c:"#4bb8cf",id:"U0AF4F13F7Y",av:"https://ca.slack-edge.com/T034MTGTM-U0AF4F13F7Y-f33fce69260f-72"},
+  jyothi:{n:"Jyothi Prakash Reddy",r:"Pro tech lead",in:"J",c:"#a889f0",id:"U09MKC8333Q",av:"https://ca.slack-edge.com/T034MTGTM-U09MKC8333Q-ebca2345209b-72"},
+  sita:{n:"Sita Ram",r:"Senior tech / RCA",in:"SR",c:"#3aa06a",id:"U086EKJDRD2",av:"https://ca.slack-edge.com/T034MTGTM-U086EKJDRD2-6dde6ab132db-72"},
+  kunal:{n:"Kunal",r:"POD head",in:"K",c:"#c08a3e",id:"U09P8HVFHKK",av:"https://ca.slack-edge.com/T034MTGTM-U09P8HVFHKK-8dfca5ae7da3-72"},
+  subhang:{n:"Subhang Reddy",r:"Product",in:"SR",c:"#e0679c",id:"U0B94EZ4L3X",av:"https://ca.slack-edge.com/T034MTGTM-U0B94EZ4L3X-g54bb5efa40b-72"},
+  titas:{n:"Titas Dewan",r:"POD backup",in:"TD",c:"#5c9ad1",id:"U08RZ4X1PFC",av:"https://ca.slack-edge.com/T034MTGTM-U08RZ4X1PFC-411a00d0fa7b-72"}
+};
+const ROUTE={ultra:{prim:["manu","harsha"],sec:["kunal","sita","subhang","titas"]},pro:{prim:["manu","jyothi"],sec:["kunal","sita","subhang","titas"]}};
+/* The sent message uses a {{SUBMITTER}} placeholder; Vercel resolves it to a Slack
+   mention via users.lookupByEmail (needs users:read.email scope). If that scope isn't
+   available, Vercel substitutes the plain name. The preview always shows the name. */
+function submitterTag(forSend){
+  if(forSend)return '{{SUBMITTER}}';
+  return AGENT?AGENT.name:'—';
+}
+
+const ISSUES=[
+  /* ===================== ULTRA ===================== */
+  {sku:"ultra",id:"u-install",sev:"g",freq:32,title:"Auto-lock / mortise alignment after install",say:"Lock does not auto-lock, or the door does not align properly",
+   media:{type:"video",label:"Reference: auto-lock check",video:"videos/auto-lock-check.mp4",driveId:"1QU5razgr9jS_dCHwC4dzQkOXNvMTt_Sk",img:"images/nylon-piece.jpg",imgcap:"Nylon piece (strike-plate part)"},
+   steps:[
+     {q:"On an open door, check if auto-lock is working using the reference video shown.",br:[
+       {yn:"yes",act:"Strike plate needs adjustment. Raise on Slack to align a revisit and nylon-piece dispatch.",cust:"Your lock is working correctly. The door frame just needs a small adjustment, and we will send a technician with the required part to set it right in one visit."},
+       {yn:"no",act:"Follow the SOP for the auto-lock issue (Gap too much).",cust:"Let me run one more quick check so we identify this precisely and fix it the right way."}]}],
+   pow:["A video of the open-door and closed-door test","The Lock Ultra number from inside the battery box","The Order ID"]},
+
+  {sku:"ultra",id:"u-gap",sev:"g",freq:17,title:"Auto-lock not working (gap too much)",say:"The 3 bolts do not lock when I close the door",
+   media:{type:"video",label:"Reference: auto-lock check",video:"videos/auto-lock-check.mp4",driveId:"1W40cW8YCapAoGSXgILfJ90ZFYoxHXNZF",img:"images/nylon-piece.jpg",imgcap:"Nylon piece (strike-plate part)"},
+   steps:[
+     {q:"On an open door, check if auto-lock is working using the reference video shown.",br:[
+       {yn:"yes",act:"Strike plate needs adjustment. Raise on Slack to align a revisit and nylon-piece dispatch.",cust:"Your lock is working correctly. The door frame needs a small adjustment, and a technician will fix it in one visit with the required part."},
+       {yn:"no",act:'On the open door, press 9 and "tick" to see if the bolts come out or not.',cust:"Let me guide you through one quick check on the lock so we can pinpoint this."}]},
+     {q:'Do the bolts come out when you press 9 and "tick"?',br:[
+       {yn:"yes",act:"Issue is with the mortise connectors. Immediately raise on Slack to align a revisit to recheck the mortise connectors.",cust:"We have identified the cause. A technician will visit and set it right for you."}]},
+     {q:"Does the issue still exist after the revisit?",br:[
+       {yn:"yes",act:"Raise on Slack with POW.\n- If CX is understanding, raise for back-PCB replacement.\n- If CX is angry, punch a complete lock replacement.",cust:"To fully resolve this, we will arrange a replacement and a technician visit so your lock works perfectly."}]}],
+   pow:["A video of the open-door and closed-door test","The Lock Ultra number","The Order ID"]},
+
+  {sku:"ultra",id:"u-pairing",sev:"g",freq:9,title:"Will not unlock after installation",say:"After installation the lock will not open with any method",
+   steps:[
+     {q:"Green light on unlock but no open, or no response at all?",br:[
+       {yn:"do",act:"First: reset from the back panel, then reset on the app. Now finish the setup.",cust:"Let me guide you through a quick reset so we get the lock working. Please follow along with me on the app and the lock."}]},
+     {q:"After the reset, does it unlock now?",br:[
+       {yn:"yes",act:"Solved. Close the case.",cust:"Your lock is working now. Please try it a few times, and reach out anytime if you need help."},
+       {yn:"no",act:"Panels not communicating. Immediately raise on Slack to align a full lock replacement.",cust:"We will arrange a replacement lock and a technician visit to set it up for you properly."}]}],
+   pow:["A video of the failed unlock attempt","The Lock Ultra number","Confirm the Wi-Fi did not drop during setup"]},
+
+  {sku:"ultra",id:"u-back",sev:"r",freq:8,title:"Back panel is dead",say:"The unlock button from inside does not work, the door does not unlock from inside, or the lock will not come online",
+   steps:[
+     {q:"Reconfigure the lock Wi-Fi with the customer's mobile hotspot and check if the lock comes online. (Close the app and reopen, do not uninstall.)",br:[
+       {yn:"yes",act:"This Wi-Fi confirmation step is important, add it in POW. Follow the next steps.",cust:"Thank you, that helps. Let me continue with the next checks."},
+       {yn:"no",act:"Remove the battery, wait 20 seconds, refit it, and recheck the Wi-Fi configuration step. If it works, follow the next steps. If not, immediately raise on Slack with POW for the engineering team to check and confirm if a replacement is required.",cust:"Let us try a quick battery reset together. If that does not bring it online, we will arrange for the lock to be checked and fixed for you."}]},
+     {q:"Guide the customer to press and hold the reset button on the back panel. Does the lock beep 5 times?",br:[
+       {yn:"yes",act:"Guide the customer to press tick on the front panel to reset the lock, then reset from the app as well. Remove the battery, wait 20 seconds, refit the battery, and finish the setup.",cust:"Good, the lock is responding. Let me guide you through resetting and setting it up again, step by step."},
+       {yn:"no",act:"Open the door manually and keep it in the open state. Bring the lock into the locked state with the free latch and door sensor, then check if the door unlocks from the front panel.",cust:"Let me guide you through one more check so we know exactly how to fix this."}]},
+     {q:"Does the back panel unlock button work after the reset?",br:[
+       {yn:"yes",act:"It was a setup issue.",cust:"Your lock is working now. That was a setup step that needed redoing. Please use it freely and reach out anytime."},
+       {yn:"no",act:'Immediately raise on Slack with POW as "unlock button issue" to align for a back panel replacement.',cust:"We will arrange a replacement part and a technician visit so the button works perfectly for you."}]},
+     {q:"Check if the door unlocks from the front panel and the green light also comes.",br:[
+       {yn:"yes",act:"Check if the back panel is working now. If yes, the Wi-Fi PCB was in a sleep state for too long. If no, immediately raise on Slack with POW for the engineering team to check and confirm if a replacement is required.",cust:"The lock is responding well. Please use it and let us know if anything comes up; we are keeping your case open to be sure."},
+       {yn:"no",act:"Immediately raise on Slack with POW to align for a back panel replacement.",cust:"We will arrange a replacement and a technician visit so your lock works reliably."}]}],
+   pow:["A video showing the buttons and the lock behaviour","Confirmation of the hotspot Wi-Fi test","The Lock Ultra number"]},
+
+  {sku:"ultra",id:"u-door",sev:"a",freq:8,title:"App shows the wrong door status",say:"The app shows the door open when it is actually closed",
+   steps:[
+     {q:"Check if the auto-lock feature works on a closed door.",br:[
+       {yn:"no",act:"Follow the SOP for the auto-lock issue.",cust:"Let me first check the locking, as that is linked to the status you are seeing."},
+       {yn:"yes",act:"Follow the next steps.",cust:"Good, the locking is working. Let me check one more thing about the status display."}]},
+     {q:"Check if the auto-lock feature works on an open door.",br:[
+       {yn:"no",act:"Follow the SOP for the auto-lock issue.",cust:"Let me check the locking first, as it relates to the status shown in the app."},
+       {yn:"yes",act:"Close and open the door 5 times and see if the app shows the correct status each time.",cust:"Let us open and close the door a few times and watch the app together to confirm the status."}]},
+     {q:"During the call, was the app status updating correctly each time?",br:[
+       {yn:"yesno",act:'Immediately raise on Slack that "incorrect door status occurring intermittently". The engineering team will look into this.',cust:"Your lock is secure. The status display sometimes updates with a slight delay, and our team is refining this. We are tracking your case to make sure it is fully resolved."}]}],
+   pow:["A video showing the door closed but the app saying open","The Lock Ultra number"]},
+
+  {sku:"ultra",id:"u-bolts",sev:"a",freq:8,title:"The 3 bolts come out on their own",say:"The bolts push out by themselves even when the door is open",
+   steps:[
+     {q:"Door fully open. Without pressing anything, do the 3 bolts push out on their own?",br:[
+       {yn:"yes",act:"Raise on Slack with POW to align a revisit to re-install the mortise.",cust:"We have identified the cause. A technician will visit and reset the part correctly so this stops happening."}]},
+     {q:"Does the issue occur even after the PX visit and mortise re-fitment?",br:[
+       {yn:"yes",act:"Raise on Slack with POW to align a mortise replacement.",cust:"To fully resolve this, we will replace the part for you and arrange a technician visit."}]}],
+   pow:["A video of the bolts coming out on the open door","The Lock Ultra number","The Order ID"]},
+
+  {sku:"ultra",id:"u-battery",sev:"g",freq:7,title:"Battery is stuck or drops suddenly",say:"The battery percentage is stuck on the app, or it drops suddenly",
+   steps:[
+     {q:"Check the battery graph in the debugger. Is it a 4200 or 5000 mAh battery? Stuck at one value or dropped suddenly?",br:[
+       {yn:"yes",act:"Always check the Lock Ultra debugger for:\n1) Awake vs unlock count — if awake count is 3x/5x or more than unlock count, there is too much activity in front of the door.\n2) Offline minutes and counts — if the lock frequently goes offline or stays offline too long, the battery drains fast (this is the cause). Tell the customer to reconfigure Wi-Fi to 2.4GHz (if already 2.4GHz, check range).\nIf the customer's Wi-Fi is nearby and 2.4GHz, raise on Slack for the engineering team to check (could be an IP-assignment issue).",cust:"Let me look at the usage pattern. If there is a lot of activity at the door or the Wi-Fi is dropping, that uses more battery. Connecting to a stable 2.4GHz Wi-Fi near the lock will improve the battery life significantly."},
+       {yn:"no",act:"4200 mAh mapping issue: arrange new 5000 mAh batteries.",cust:"We will send you an upgraded set of batteries that improves the reading and lasts longer, at no cost to you."}]},
+     {q:"Does the lock keep sending one fixed value (for example, always 91)?",br:[
+       {yn:"do",act:"One battery is physically faulty. Raise on Slack with POW to replace the battery.",cust:"One of the batteries needs replacing. We will arrange a fresh battery for you."}]}],
+   pow:["A clear image of the battery box","The Lock Ultra number"]},
+
+  {sku:"ultra",id:"u-video",sev:"a",freq:6,title:"Live video is black / no image",say:"The video is black, or no photo comes in the notification",
+   steps:[
+     {q:"Do the doorbell and lock-bell notifications show a photo, but the live video is still black or does not load even after 10 seconds?",br:[
+       {yn:"no",act:"Raise on Slack to align a revisit for the camera-wire pinching issue.",cust:"The camera needs a quick adjustment at the door. A technician will visit and fix it in one visit."},
+       {yn:"yes",act:"Raise on Slack to align a revisit for camera firmware flashing.",cust:"The camera needs a quick update, which our technician will do on a visit, and the video will work properly."}]},
+     {q:"Do the images come sometimes but not always?",br:[
+       {yn:"do",act:"Weak Wi-Fi. Reconfigure Wi-Fi and check router distance.",cust:"The images are missing when the Wi-Fi signal is weak. Let us reconnect the Wi-Fi, and keeping the router closer to the lock will help."}]}],
+   pow:["A video of the live video and one notification","Wi-Fi signal strength and speed","The Lock Ultra number"]},
+
+  {sku:"ultra",id:"u-motion",sev:"a",freq:6,title:"Motion sensor / Face not waking the lock",say:"Face unlock does not work, the lock does not wake up on its own",
+   steps:[
+     {q:"Check if Face unlock works after waking the lock up.",br:[
+       {yn:"no",act:"Face ID is not working. Immediately raise on Slack with POW; the engineering team will check the data logs to see if it is firmware (solved from backend) or needs a replacement.",cust:"We will get this checked by our team and fix it for you. In most cases it is resolved remotely; if any part is needed, we will arrange it."},
+       {yn:"yes",act:"Face ID is working fine; need to check the motion sensor. Follow the next steps.",cust:"Good, the face unlock itself is working. Let me check why the lock is not waking up on its own."}]},
+     {q:"Door closed. Customer steps away 5-6 seconds so the lock sleeps, then comes in front. Does the lock wake (bell icon glows)?",br:[
+       {yn:"no",act:"Ask the customer to start live video for 20 seconds, then close it and check again if Face ID works, as in the earlier step.",cust:"Let us try one quick step. Please open the live video for about 20 seconds, close it, and then stand in front of the lock again."}]},
+     {q:"Does Face ID work after the two-way talk / live video session?",br:[
+       {yn:"yes",act:'Motion sensor was off; the two-way talk activated it. Raise on Slack "firmware update required - motion sensor worked after 2 way talk", collect POW.',cust:"Your lock is fine. We will apply a small update so the lock wakes up on its own every time, and it will start working smoothly."},
+       {yn:"no",act:'Immediately raise on Slack that "motion sensor dead but Face ID working fine"; need to provide a lock replacement.',cust:"We will arrange a replacement so the lock wakes and recognises you reliably. A technician will set it up for you."}]}],
+   pow:["A video of the wake-up test","The Lock Ultra number"]},
+
+  {sku:"ultra",id:"u-rf",sev:"a",freq:6,title:"No notification from the doorbell (RF)",say:"Not getting notifications from the doorbell / RF module",
+   steps:[
+     {q:"Check that the RF bell notification is visible on the app on a completely open door.",br:[
+       {yn:"yes",act:"Distance or range issue. Raise on Slack with POW mentioning the RF module works on an open door; assign a revisit to re-fit the RF module close to the lock.",cust:"The doorbell unit is placed a little too far from the lock. A technician will reposition it closer, and it will work reliably."},
+       {yn:"no",act:"Guide the customer to unpair the RF module from the app and check if it pairs again from the app.",cust:"Let me guide you through re-pairing the doorbell unit; this often restores the notifications."}]},
+     {q:"Did the RF module pair after unpairing?",br:[
+       {yn:"no",act:"Immediately raise on Slack to align a replacement of the RF module.",cust:"The doorbell unit needs replacing. We will send a new one and set it up for you."},
+       {yn:"yes",act:"Check if notifications appear on the customer's phone now.",cust:"The unit paired. Let us confirm the notifications are coming through now."}]},
+     {q:"Is the issue still faced after successful pairing?",br:[
+       {yn:"yes",act:"Check lock-bell notifications, on-demand unlock, and live video.",cust:"Let me run a couple of quick checks on the other features to pinpoint this."},
+       {yn:"no",act:"Advise the customer that the issue was due to interference in the signal, hence re-pairing was required.",cust:"It is working now. The connection just needed refreshing. Please reach out anytime if you need help."}]},
+     {q:"Are the other features working when tested?",br:[
+       {yn:"no",act:"The issue is with the customer's Wi-Fi, not the RF module. Use the Wi-Fi issues SOP to debug further.",cust:"The doorbell unit is fine; the notifications depend on the Wi-Fi. Let us strengthen the Wi-Fi connection to get them coming through."},
+       {yn:"yes",act:"Immediately raise on Slack to align a replacement of the RF module.",cust:"The doorbell unit needs replacing. We will send a new one and set it up for you."}]}],
+   pow:["A video of the missed notification","The Lock Ultra number"]},
+
+  {sku:"ultra",id:"u-wifi",sev:"g",freq:6,title:"Lock keeps going offline",say:"The lock keeps showing offline in the app",
+   steps:[
+     {q:"Reconfigure the same Wi-Fi again and check if it comes online.",br:[
+       {yn:"yes",act:"Weak/far Wi-Fi: move the router closer.",cust:"The lock goes offline when the Wi-Fi signal is weak at the door. It is connected now; keeping the router closer or adding an extender will keep it stable."},
+       {yn:"no",act:"Check on the customer's mobile hotspot. If it works, it is a customer Wi-Fi issue; if not, follow the next steps.",cust:"Let us test with your mobile hotspot to find out whether it is the home Wi-Fi or the lock, so we fix the right thing."}]},
+     {q:"Does the lock work with the hotspot?",br:[
+       {yn:"no",act:"Follow the SOP for the back-panel-dead issue.",cust:"Let me run a deeper check on the lock so we resolve this properly for you."}]}],
+   pow:["A screenshot of the Wi-Fi signal and speed","The Lock Ultra number"]},
+
+  {sku:"ultra",id:"u-keypad",sev:"r",freq:4,title:"A keypad number is dead",say:"A number on the keypad does not respond, like 9 or 0",
+   steps:[
+     {q:"Are all the digits glowing?",br:[
+       {yn:"yes",act:"Go to the next step question.",cust:"Let me check one more thing about the keys with you."},
+       {yn:"no",act:"Immediately raise on Slack with POW for a lock replacement.",cust:"The keypad needs replacing. We will arrange a replacement and a technician visit for you."}]},
+     {q:"Does the specific number (or numbers) work on a hard press?",br:[
+       {yn:"yesno",act:"Front-panel sensitivity fault. Raise over Slack for a lock replacement.",cust:"The keypad panel needs replacing so every key responds correctly. We will arrange the replacement and a technician visit."}]}],
+   pow:["A video showing which numbers do not work","The Lock Ultra number"]},
+
+  {sku:"ultra",id:"u-fp",sev:"a",freq:3,title:"Fingerprint is not working",say:"The fingerprint does not unlock the lock",
+   steps:[
+     {q:"Confirm the lock opens with another method (PIN/Face). Is the problem only with the fingerprint?",br:[
+       {yn:"yes",act:"First: delete the saved fingerprint, register it again in the app, and check if solved.",cust:"Let us re-add your fingerprint freshly, as sometimes the first scan is not saved cleanly. I will guide you through it."}]},
+     {q:"Is the issue still faced after re-registering?",br:[
+       {yn:"no",act:"It was a registration issue. Guide the customer. Close the case.",cust:"It is working now. The first scan was not saved properly. Please place your finger flat on the sensor each time."},
+       {yn:"yes",act:"Check if the green light on top of the front panel shows when the finger is placed. If yes, start the reset process on the app step by step, then reset from the back panel.",cust:"Let me guide you through a full reset of the lock, which usually clears this up."}]},
+     {q:"Is the customer unable to re-register?",br:[
+       {yn:"yes",act:"Do the reset process both on the app and from the back panel, then recheck.",cust:"Let us reset the lock together and try registering again; this generally resolves it."}]},
+     {q:"Is the issue still faced after the reset?",br:[
+       {yn:"yes",act:"Immediately raise on Slack with POW for the engineering team to check and confirm if a replacement is required.",cust:"We will get this checked and arrange a fix for you. In the meantime, please use your PIN or Face unlock, which are working fine."},
+       {yn:"no",act:"The issue was due to incorrect registration; tell the same to the customer.",cust:"It is working now. The fingerprint just needed re-registering. Please place your finger flat on the sensor each time."}]}],
+   pow:["A clear video of the finger being placed and no response","The Lock Ultra number"]},
+
+  {sku:"ultra",id:"u-config",sev:"a",freq:4,title:"Setup stuck / lock not found",say:"Setup gets stuck, lock not found, or two locks show in the app",
+   steps:[
+     {q:"Is the customer's Wi-Fi stable during setup? Weak or 5GHz-only is the top cause of stalling after the PIN step.",br:[
+       {yn:"yes",act:"Wi-Fi problem: fix the Wi-Fi or use a hotspot, then run setup again. Do not uninstall the app; close and reopen after reset.",cust:"The setup stops when the Wi-Fi is weak. Let us connect to a stronger network or your mobile hotspot and complete the setup together."},
+       {yn:"no",act:"Lock not found / duplicate: raise a ticket. Engineering resets the entity from the backend, then reconfigure.",cust:"Let me get the lock refreshed from our side, and then I will help you set it up again. This will take a short while."}]}],
+   pow:["A screenshot of the error","The Order ID and the Lock Ultra number"]},
+
+  {sku:"ultra",id:"u-mic",sev:"r",freq:2,title:"Voice broken on two-way talk",say:"The visitor's voice sounds broken, distorted, cracking, or echoes",
+   steps:[
+     {q:"Ask the customer to check two-way talk from another room with the door closed, and see if it is solved.",br:[
+       {yn:"yes",act:"Educate the customer that two-way talk can have a minor issue when the phone and the lock are nearby.",cust:"When your phone is very close to the lock, the sound can echo. From a little distance it works clearly, which is normal."},
+       {yn:"no",act:"Open the door completely and ask the customer to go to another room about 10m away and check the two-way talk.",cust:"Let us test it from a bit further away to confirm where the sound issue is coming from."}]},
+     {q:"Open the door completely, customer ~10m away, check two-way talk. Is it solved?",br:[
+       {yn:"yes",act:"The issue is due to an outside wall edge or flat surface causing voice reflection. Raise the issue on Slack.",cust:"Your lock is working fine. The sound was reflecting off a nearby surface at the door. We are noting this to improve it further."},
+       {yn:"no",act:"Check the same issue with the lock Wi-Fi connected to the customer's mobile hotspot.",cust:"Let us test the sound on your mobile hotspot to see if the network is affecting it."}]},
+     {q:"Check the same issue with the lock connected to the customer's mobile hotspot. Is it solved?",br:[
+       {yn:"yes",act:"Educate the customer that the issue was due to poor Wi-Fi connectivity. Advise bringing the router closer or using an extender.",cust:"The sound was breaking because of the Wi-Fi signal. A closer router or an extender near the door will give you clear two-way talk."},
+       {yn:"no",act:"Now raise the issue over Slack with POW.",cust:"We will get this looked into and make sure your two-way talk works clearly."}]}],
+   pow:["A video with clear audio of the distorted voice","The Lock Ultra number"]},
+
+  {sku:"ultra",id:"u-intruder",sev:"r",freq:3,title:"Intruder alarm keeps ringing",say:"Intruder alert / siren / alarm sound occurring randomly",
+   media:{type:"imgs",label:"Reference: accessory plate & gasket",items:[{src:"images/anti-pry-plate.jpeg",cap:"Anti-pry / accessory plate"},{src:"images/gasket.jpeg",cap:"With vs without gasket"}]},
+   steps:[
+     {q:"Ask the customer to shake the front panel and see if this triggers the alert.",br:[
+       {yn:"yes",act:"Front panel has become loose. Immediately raise on Slack to align a revisit for re-installation. If no, go to the next step question.",cust:"The front panel just needs to be re-secured. A technician will visit and fix it, and the alarm will stop."}]},
+     {q:"Ask the customer to show the front panel. Is the accessory plate installed?",br:[
+       {yn:"yes",act:"Check if a gasket is present. If yes, align a revisit on Slack to remove the gasket. If no, collect POW and align a revisit to check for weld beads on the accessory plate.",cust:"We have identified what is triggering the alarm. A technician will visit and correct the fitting so it stops."},
+       {yn:"no",act:"Collect these details:\n1) Has the issue been occurring since day 1, or after a few days of installation?\n2) Any time-based pattern to the alarm (for example, only mornings or afternoons)?\n3) Any images received in the intruder alert notification? If yes, take screenshots from the customer.\nWith these details and POW, raise on Slack immediately to align a revisit for a front-panel installation recheck.",cust:"Let me note a few details so we fix this precisely. A technician will visit and recheck the installation to stop the alarm."}]}],
+   pow:["A video of the alarm going off","Screenshots of any alert images","The Lock Ultra number"]},
+
+  /* ===================== PRO ===================== */
+  {sku:"pro",id:"p-mortise",sev:"a",freq:298,title:"Mortise unlock / passage mode issue",say:"Green light on fingerprint but door does not unlock, or door unlocks without any authorization, or sometimes does not unlock",
+   steps:[
+     {q:"On an open door, from the back panel, check if the mortise bolts come out and go in smoothly.",br:[
+       {yn:"no",act:"The mortise bolts are jammed and need a mortise replacement.\n- If the bolts work fine on an open door but not on a closed door, align a revisit for strike-plate adjustment.",cust:"We have identified the cause. A technician will visit and set the lock right, replacing any part needed, so it opens smoothly."}]},
+     {q:"Strike plate and mortise bolts are working OK, but the issue still occurs.",br:[
+       {yn:"yes",act:"This is a mortise unlock / passage mode issue. Immediately create a revisit for Lock Pro firmware flashing.\nNote: 1) Flashing can be done only on New FP SKU (refer image to confirm New vs Old). 2) For OLD SKU, a mortise replacement is required.",cust:"A technician will apply a quick update on a visit, which resolves this in most cases. If your lock needs a part instead, we will arrange that too."}]},
+     {q:"Is the issue persistent even after Lock Pro firmware flashing?",br:[
+       {yn:"yes",act:"Then a mortise replacement is required.",cust:"To fully resolve this, we will replace the part for you and arrange a technician visit."}]}],
+   pow:["A video of the bolts on the open door and the unlock attempt","A photo confirming New vs Old SKU","The Lock Pro number"]},
+
+  {sku:"pro",id:"p-fp",sev:"r",freq:56,title:"Fingerprint sensor is dead",say:"Fingerprint sensor is not working",
+   steps:[
+     {q:"Blue light but never green? Same fingerprint failing for every member? Confirm the lock opens with a password.",br:[
+       {yn:"do",act:"First: delete the fingerprint and register it again through the app, following the same steps as shown.",cust:"Let us re-add your fingerprint freshly through the app, and I will guide you through each step."}]},
+     {q:"After re-registering, does the sensor turn green now?",br:[
+       {yn:"yes",act:"It was a registration issue. Guide the customer. Close the case.",cust:"It is working now. Please place your finger flat on the sensor each time for a smooth unlock."},
+       {yn:"no",act:"Sensor is dead. Raise on Slack to align a full lock replacement (flashing will not fix a dead sensor).",cust:"The fingerprint part needs replacing. We will arrange a replacement and a technician visit. Please use your PIN in the meantime."}]},
+     {q:"Is there no light at all?",br:[
+       {yn:"yes",act:"Sensor is dead. Raise on Slack to align a full lock replacement (flashing will not fix a dead sensor).",cust:"The fingerprint part needs replacing. We will arrange a replacement and a technician visit. Please use your PIN in the meantime."}]}],
+   pow:["A clear video of the finger being placed and the sensor light","The Lock Pro number"]},
+
+  {sku:"pro",id:"p-battery",sev:"a",freq:29,title:"Battery leak or drain",say:"The battery drains very fast",
+   steps:[
+     {q:"Check the debugger battery usage graph to confirm the battery has actually been draining fast.",br:[
+       {yn:"yes",act:"Check the following:\n1) Are the batteries Duracell brand? (If not, guide the customer to use Duracell Ultra AA.)\n2) Are the batteries placed properly in the battery box? (If not, guide correct placement.)\n3) Any signs of leakage or white liquid in the battery box? (If yes, align a battery-box replacement. If leakage is heavy, align a full lock replacement.)",cust:"Let us check a few things. Using 8 new Duracell Ultra AA batteries placed correctly gives the best life. If there is any leakage, we will arrange a replacement for you."}]},
+     {q:"Is an old battery box present in the lock?",br:[
+       {yn:"yes",act:"Create a revisit to align a new battery-box replacement.",cust:"The battery compartment will be upgraded to a newer one. A technician will visit and change it for you."}]}],
+   pow:["A clear image of the battery box, with and without batteries","The Lock Pro number"]},
+
+  {sku:"pro",id:"p-notif",sev:"a",freq:24,title:"Too many notifications",say:"The customer is getting multiple and frequent notifications (RF / lock bell)",
+   steps:[
+     {q:"Is the issue specific to the lock bell? (Check app history.)",br:[
+       {yn:"yes",act:"Create a revisit for lock firmware flashing.",cust:"A technician will apply a quick update on a visit, and the notifications will return to normal."}]},
+     {q:"Is the issue persistent / still exists after flashing?",br:[
+       {yn:"yes",act:"Immediately raise on Slack for a lock replacement. This happens due to the glass on the front panel causing excess sensitivity, creating false lock-bell notifications.",cust:"To fully resolve this, we will arrange a replacement and a technician visit so the notifications work correctly."}]},
+     {q:"Is the issue specific to the door bell?",br:[
+       {yn:"yes",act:"Create an electrician revisit to check the door bell for short circuits. A minor short circuit or current leak can trigger the RF bell module while the customer's bell does not ring.",cust:"We will arrange an electrician to check the doorbell wiring, which is causing the extra notifications, and set it right."}]}],
+   pow:["Screenshots of the notifications and app history","The Lock Pro number"]},
+
+  {sku:"pro",id:"p-rf",sev:"a",freq:22,title:"No doorbell notification (RF)",say:"The customer is not getting notifications from the doorbell",
+   steps:[
+     {q:"Are notifications received from the lock bell?",br:[
+       {yn:"no",act:"The issue is due to weak Wi-Fi / pairing. Follow the steps for the Wi-Fi issue.",cust:"The notifications depend on the Wi-Fi connection. Let us strengthen the Wi-Fi so they come through reliably."},
+       {yn:"yes",act:'Check in App settings - Diagnosis if the RF status shows a "Green Tick".',cust:"Let me check the doorbell unit's status in the app with you."}]},
+     {q:"Is the RF status in the app red?",br:[
+       {yn:"yes",act:"Unpair the RF module (with help from Manuranjan) and pair again. If solved, good; if not, follow the next steps.",cust:"Let us re-pair the doorbell unit; this usually restores the notifications."}]},
+     {q:"Is the RF status red and pairing also not happening?",br:[
+       {yn:"yes",act:"Immediately raise on Slack for an RF module replacement.",cust:"The doorbell unit needs replacing. We will send a new one and set it up for you."}]},
+     {q:"Is the RF status in the app green?",br:[
+       {yn:"yes",act:"The RF is paired and working, but the notification flow is breaking. Add another member (another mobile device) and check if they also receive the notification. Immediately raise on Slack with POW for the engineering team to verify.",cust:"The doorbell unit is working. We are checking the notification delivery so it reaches your phone every time, and our team is on it."}]}],
+   pow:["A video of the missed notification","The Lock Pro number"]},
+
+  {sku:"pro",id:"p-setup",sev:"a",freq:12,title:"Lock jumps into settings mode",say:"After unlocking, the lock keeps going into settings mode",
+   steps:[
+     {q:"After unlock, does the lock jump into settings mode by itself? Confirm on a video.",br:[
+       {yn:"yes",act:"High-sensitivity keypad board issue. Create a revisit for firmware flashing.",cust:"A technician will apply a quick update on a visit, and the lock will stop going into settings mode."},
+       {yn:"no",act:"The issue is intermittent (happens sometimes). Create a revisit for firmware flashing.",cust:"A technician will apply a quick update on a visit to stop this from happening."}]},
+     {q:"Does the issue still exist after flashing?",br:[
+       {yn:"yes",act:"Raise on Slack with POW to align a lock replacement.",cust:"To fully resolve this, we will arrange a replacement and a technician visit."}]}],
+   pow:["A video of the lock going into settings mode","The Lock Pro number"]},
+
+  {sku:"pro",id:"p-speaker",sev:"a",freq:8,title:"Noise when unlocking",say:"There is a loud burst of noise when the lock unlocks",
+   steps:[
+     {q:"Does the noise happen during unlocking and come and go?",br:[
+       {yn:"yes",act:"Unlocking noise = firmware issue. Create a revisit for firmware flashing.",cust:"A technician will apply a quick update on a visit, and the noise will stop."},
+       {yn:"no",act:"The issue could be intermittent (occurs sometimes). Create a revisit for firmware flashing.",cust:"A technician will apply a quick update on a visit to resolve the noise."}]},
+     {q:"Does the issue still exist after flashing?",br:[
+       {yn:"yes",act:"Raise on Slack to align with the team to confirm a lock replacement.",cust:"To fully resolve this, we will arrange a replacement and a technician visit."}]}],
+   pow:["A video with clear audio of the noise","The Lock Pro number"]},
+
+  {sku:"pro",id:"p-intruder",sev:"g",freq:7,title:"Intruder alarm ringing",say:"The intruder alarm is ringing continuously",
+   media:{type:"img",label:"Reference: anti-pry plate",src:"images/anti-pry-plate.jpeg"},
+   steps:[
+     {q:"Ask the customer to shake the front panel and see if this triggers the alert.",br:[
+       {yn:"yes",act:"Front panel has become loose. Immediately raise on Slack to align a revisit for re-installation. If no, go to the next step question.",cust:"The front panel just needs to be re-secured. A technician will visit and fix it, and the alarm will stop."},
+       {yn:"no",act:"The issue could be intermittent. Raise on Slack to align a revisit to install the anti-pry plate.",cust:"A small safety plate needs to be fitted to stop the alarm. A technician will install it in one visit."}]}],
+   pow:["A video of the alarm going off","The Lock Pro number"]},
+
+  {sku:"pro",id:"p-camera",sev:"a",freq:6,title:"No image / black and white image",say:"No photo in the notification, or the image is black and white",
+   steps:[
+     {q:"Is the network weak (low signal or slow speed)? Check from the debugger.",br:[
+       {yn:"yes",act:'Reconfigure Wi-Fi to the customer mobile hotspot and check if images appear in the notifications (both RF and lock bell). If still no image, follow the SOP for the "no image in notification" step below.',cust:"The images need a stronger Wi-Fi signal. Let us reconnect the Wi-Fi; a closer router or an extender near the door will help."}]},
+     {q:"Is the image black and white? (Can be intermittent.)",br:[
+       {yn:"yes",act:"Black and white usually means lighting at the customer's place. Check on an open door with different lighting to see if the issue persists. If it still shows black and white, create a revisit to check the image with the lock uninstalled from the door, to confirm lighting vs hardware.",cust:"A black and white image is usually due to the lighting at your door, which is normal. If it continues, a technician will check the camera on a visit to be sure."}]},
+     {q:"Is there no image at all in the notification (RF / lock bell)?",br:[
+       {yn:"yes",act:"Check app history to see if this has been there since installation or started later. In both cases, align a revisit for camera connector / wire re-fitment.",cust:"The camera connection needs a quick adjustment at the door. A technician will visit and fix it in one visit."}]}],
+   pow:["A video of the notification and live video","The Lock Pro number"]},
+
+  {sku:"pro",id:"p-digit",sev:"r",freq:5,title:"A display number does not light up",say:"A number like 1 or 2 does not light up on the display",
+   steps:[
+     {q:"Ask which number does not light up. Confirm on a video.",br:[
+       {yn:"do",act:"Display fault on the keypad board, not fixable on site. Raise on Slack with POW to align a front panel or lock replacement.",cust:"The keypad panel needs replacing as one of the numbers is not lighting up. We will arrange the replacement and a technician visit."}]}],
+   pow:["A video showing the number not lighting up","The Lock Pro number"]},
+
+  {sku:"pro",id:"p-rfid",sev:"g",freq:3,title:"RFID card not working",say:"The RFID card does not work or register",
+   steps:[
+     {q:"Check if the RFID card is already registered in the app.",br:[
+       {yn:"no",act:'Try to register the RFID, following the exact steps in the app. Note: the RFID card must be placed on the lock where the "rectangle" symbol is visible.',cust:"Let us register your card. Please hold it where the rectangle symbol is on the lock, and I will guide you through the steps."},
+       {yn:"yes",act:"Remove the registered RFID card from the app (same steps) and try to re-register.",cust:"Let us remove and re-add the card freshly, which usually resolves this."}]},
+     {q:"Were you able to re-register the RFID card now?",br:[
+       {yn:"yes",act:"Check if RFID unlock works. If yes, guide the customer that it was a registration issue.",cust:"It is working now. The card just needed re-adding. Please tap it where the rectangle symbol is."},
+       {yn:"no",act:"Check if you can register a second RFID card. If yes and it unlocks, raise on Slack to align a replacement of the one faulty card.",cust:"Let us try your second card. If that works, we will send you a replacement for the one that does not."}]},
+     {q:"Do both RFID cards fail to register?",br:[
+       {yn:"yes",act:"Raise on Slack with POW for the team to confirm if a lock replacement is required.",cust:"We will get this checked and arrange the right fix for you."}]}],
+   pow:["A video of the registration attempt","The Lock Pro number"]}
+];
+
+const SEV={g:["sev-g","dg","var(--g)","Usually solved on call"],a:["sev-a","da","var(--a)","Sometimes solved on call"],r:["sev-r","dr","var(--r)","Follow all the steps"]};
+const SKULBL={ultra:["skutag-ultra","Ultra"],pro:["skutag-pro","Pro"]};
+let activeSku="ultra";
+
+function esc(t){return (t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function pocRow(k,type){const p=POCS[k];
+  const badge='<span class="badge '+(type==='prim'?'b-prim">Primary':'b-sec">Backup')+'</span>';
+  const fb="this.onerror=null;this.outerHTML='<span class=\\'av\\' style=\\'background:"+p.c+"\\'>"+p.in+"</span>';";
+  const avatar = p.av ? '<img class="av avimg" src="'+p.av+'" alt="'+esc(p.n)+'" onerror="'+fb+'">' : '<span class="av" style="background:'+p.c+'">'+p.in+'</span>';
+  return '<div class="p">'+avatar+'<span>'+esc(p.n)+' <span class="rl">· '+esc(p.r)+'</span></span>'+badge+'</div>';}
+function ynLabel(yn){return yn==='yes'?['yn-y','If yes']:yn==='no'?['yn-n','If no']:yn==='yesno'?['yn-do','If yes / no']:['yn-do','Do this'];}
+
+function renderGrid(filter){
+  filter=(filter||'').toLowerCase();
+  const rows=ISSUES.filter(i=>i.sku===activeSku&&(!filter||(i.title+i.say).toLowerCase().includes(filter))).sort((a,b)=>(b.freq||0)-(a.freq||0));
+  const g=document.getElementById('grid');
+  if(!rows.length){g.innerHTML='<div class="empty">No match. Try a different word.</div>';return;}
+  g.innerHTML=rows.map((i,idx)=>{
+    const s=SEV[i.sev]||SEV.a,sk=SKULBL[i.sku];
+    return '<button class="tile" onclick="openIssue(\''+i.id+'\')">'
+      +'<span class="bar" style="background:'+s[2]+'"></span>'
+      +'<div class="row1"><span class="rank">#'+(idx+1)+'</span><span class="skutag '+sk[0]+'">'+sk[1]+'</span><span class="sev '+s[0]+'">'+s[3]+'</span></div>'
+      +'<h3>'+esc(i.title)+'</h3><div class="say">'+esc(i.say)+'</div>'
+      +'<div class="go">Open steps →</div></button>';
+  }).join('');
+}
+function mediaBlock(m){
+  if(!m)return '';
+  if(m.type==='video'){
+    var extra = m.img ? '<a href="'+m.img+'" target="_blank" rel="noopener"><img class="mimg" src="'+m.img+'" alt="'+esc(m.imgcap||'')+'"></a><div class="mcap">'+esc(m.imgcap||'')+'</div>' : '';
+    return '<div class="media"><div class="mh">'+esc(m.label||'Reference')+'</div>'
+      +'<video class="mvid" controls playsinline preload="metadata"><source src="'+m.video+'" type="video/mp4"></video>'
+      +extra+'</div>';
+  }
+  if(m.type==='drive'){
+    var extra = m.img ? '<a href="'+m.img+'" target="_blank" rel="noopener"><img class="mimg" src="'+m.img+'" alt="'+esc(m.imgcap||'')+'"></a><div class="mcap">'+esc(m.imgcap||'')+'</div>' : '';
+    return '<div class="media"><div class="mh">'+esc(m.label||'Reference')+'</div>'
+      +'<iframe src="https://drive.google.com/file/d/'+m.id+'/preview" allow="autoplay" allowfullscreen></iframe>'
+      +'<a class="mlink" href="https://drive.google.com/file/d/'+m.id+'/view" target="_blank" rel="noopener">▶ Play video in new tab</a>'+extra+'</div>';
+  }
+  if(m.type==='img'){
+    return '<div class="media"><div class="mh">'+esc(m.label||'Reference')+'</div>'
+      +'<a href="'+m.src+'" target="_blank" rel="noopener"><img class="mimg" src="'+m.src+'" alt="'+esc(m.label||'')+'"></a></div>';
+  }
+  if(m.type==='imgs'){
+    return '<div class="media"><div class="mh">'+esc(m.label||'Reference')+'</div>'
+      +m.items.map(function(it){return '<a href="'+it.src+'" target="_blank" rel="noopener"><img class="mimg" src="'+it.src+'" alt="'+esc(it.cap||'')+'"></a><div class="mcap">'+esc(it.cap||'')+'</div>';}).join('')
+      +'</div>';
+  }
+  return '';
+}
+function buildDetails(){
+  const wrap=document.getElementById('details');
+  wrap.innerHTML=ISSUES.map(i=>{
+    const s=SEV[i.sev]||SEV.a,sk=SKULBL[i.sku],rt=ROUTE[i.sku];
+    let n=0;
+    const steps=i.steps.map(st=>{
+      n++;
+      const brs=st.br.map(b=>{
+        const yl=ynLabel(b.yn);
+        const cust=b.cust?'<div class="cust"><span class="ci">🗣️</span><div class="ct"><b>Tell the customer:</b> '+esc(b.cust)+'</div></div>':'';
+        return '<div class="br"><div class="brtop"><span class="yn '+yl[0]+'">'+yl[1]+'</span><div class="act">'+esc(b.act)+'</div></div>'+cust+'</div>';
+      }).join('');
+      return '<div class="step"><div class="qh"><span class="qn">'+n+'</span><p>'+esc(st.q)+'</p></div><div class="branches">'+brs+'</div></div>';
+    }).join('');
+    const pow=i.pow.map(p=>'<li>'+esc(p)+'</li>').join('');
+    return '<div class="page" id="page-'+i.id+'">'
+      +'<button class="back" onclick="goHome()">← Back to the list</button>'
+      +'<div class="dwrap'+(i.media?' has-media':'')+'">'
+        +mediaBlock(i.media)
+        +'<div class="dhead"><div class="dtags"><span class="skutag '+sk[0]+'" style="font-size:11px;padding:4px 10px">Lock '+sk[1]+'</span><span class="sevpill '+s[0]+'"><span class="dot '+s[1]+'"></span>'+s[3]+'</span></div>'
+        +'<div class="dtitle">'+esc(i.title)+'</div>'
+        +'<div class="dsay"><span class="cslabel">Customer says</span>“'+esc(i.say)+'”</div></div>'
+        +'<div class="cols">'+steps+'</div>'
+        +'<div class="dfoot">'
+          +'<div class="powbox"><div class="powh"><span class="pi">📋</span>Collect this before raising on Slack (POW)</div><ul>'+pow+'</ul><div class="pownote">Do not raise the ticket until you have collected all of the above.</div></div>'
+          +'<button class="raisebtn" onclick="openModal(\''+i.id+'\')">🚀 Raise on Slack</button>'
+          +'<div class="side"><h4>Ticket goes to</h4><div class="poc">'
+          +rt.prim.map(k=>pocRow(k,'prim')).join('')+rt.sec.map(k=>pocRow(k,'sec')).join('')
+          +'</div></div>'
+        +'</div>'
+      +'</div></div>';
+  }).join('');
+}
+function openIssue(id){
+  document.getElementById('home').classList.remove('on');
+  document.querySelectorAll('#details .page').forEach(p=>p.classList.remove('on'));
+  document.getElementById('page-'+id).classList.add('on');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function goHome(){
+  document.querySelectorAll('#details .page').forEach(p=>p.classList.remove('on'));
+  document.getElementById('home').classList.add('on');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function setSku(sku){
+  activeSku=sku;
+  document.body.className=sku;
+  document.documentElement.style.setProperty('--accent', sku==='pro'?'var(--pro)':'var(--ultra)');
+  document.querySelectorAll('#toggle button').forEach(b=>b.classList.toggle('on',b.dataset.sku===sku));
+  document.getElementById('flash').classList.toggle('hide',sku!=='pro');
+  document.getElementById('search').value='';
+  goHome();renderGrid('');
+}
+document.getElementById('toggle').addEventListener('click',e=>{const b=e.target.closest('button');if(b)setSku(b.dataset.sku);});
+document.getElementById('search').addEventListener('input',e=>renderGrid(e.target.value));
+
+/* ============ AGENT (from Google SSO) ============ */
+let AGENT=null; // {name,email,picture}
+
+function renderWhoami(){
+  if(!AGENT)return;
+  const w=document.getElementById('whoami');
+  w.style.display='flex';
+  w.innerHTML=(AGENT.picture?'<img src="'+AGENT.picture+'" alt="">':'')
+    +'<span>'+esc(AGENT.name)+'</span><button onclick="signOut()">Sign out</button>';
+}
+function onGoogleCredential(resp){
+  const gerr=document.getElementById('gerr'); gerr.textContent='';
+  fetch('/api/auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({credential:resp.credential})})
+    .then(r=>r.json()).then(d=>{
+      if(!d.ok){gerr.textContent=d.error||'Sign-in failed';return;}
+      AGENT={name:d.name,email:d.email,picture:d.picture};
+      sessionStorage.setItem('agent',JSON.stringify(AGENT));
+      document.getElementById('gate').classList.add('hide');
+      renderWhoami();
+    }).catch(()=>{gerr.textContent='Could not reach the sign-in service.';});
+}
+function signOut(){sessionStorage.removeItem('agent');location.reload();}
+function initAuth(){
+  const cached=sessionStorage.getItem('agent');
+  if(cached){AGENT=JSON.parse(cached);document.getElementById('gate').classList.add('hide');renderWhoami();return;}
+  function boot(){
+    if(!window.google||!google.accounts||!google.accounts.id){return setTimeout(boot,120);}
+    google.accounts.id.initialize({client_id:GOOGLE_CLIENT_ID,callback:onGoogleCredential});
+    google.accounts.id.renderButton(document.getElementById('gbtn'),{theme:'filled_blue',size:'large',text:'signin_with',shape:'pill'});
+  }
+  boot();
+}
+
+/* ============ ESCALATION MODAL ============ */
+let CUR=null;      // current issue object
+let FETCHED=null;  // fetched ticket details
+let FILES=[];      // attached File objects
+let PRIM=[],SEC=[];// selected POC keys
+
+function cap(s){return s? s.charAt(0).toUpperCase()+s.slice(1):s;}
+const MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
+function ord(n){const s=["th","st","nd","rd"],v=n%100;return n+(s[(v-20)%10]||s[v]||s[0]);}
+/* "2026-05-01" -> "May 1st, 2026" */
+function prettyDate(iso){
+  if(!iso)return '';
+  const m=String(iso).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(!m)return iso;
+  const y=+m[1],mo=+m[2]-1,d=+m[3];
+  if(mo<0||mo>11)return iso;
+  return MONTHS[mo]+' '+ord(d)+', '+y;
+}
+/* current time -> "July 16th, 2026 at 4:48 PM GMT+5:30" */
+function nowStamp(){
+  const now=new Date();
+  const date=MONTHS[now.getMonth()]+' '+ord(now.getDate())+', '+now.getFullYear();
+  let h=now.getHours();const ap=h>=12?'PM':'AM';h=h%12||12;
+  const mins=String(now.getMinutes()).padStart(2,'0');
+  const off=-now.getTimezoneOffset(),sign=off>=0?'+':'-',oh=Math.floor(Math.abs(off)/60),om=Math.abs(off)%60;
+  const gmt='GMT'+sign+oh+(om?':'+String(om).padStart(2,'0'):'');
+  return date+' at '+h+':'+mins+' '+ap+' '+gmt;
+}
+function renderChips(){
+  const rt=ROUTE[CUR.sku];
+  const all=[...new Set([...rt.prim,...rt.sec,'kunal','sita','subhang','titas','manu','harsha','jyothi'])];
+  function draw(el,selected,otherSel){
+    document.getElementById(el).innerHTML=all.map(k=>{
+      const on=selected.includes(k);
+      return '<span class="chip'+(on?' on':'')+'" data-k="'+k+'" data-t="'+el+'">'+esc(POCS[k].n)+(on?' <span class="cx">×</span>':'')+'</span>';
+    }).join('');
+  }
+  draw('f-prim',PRIM);draw('f-sec',SEC);
+  document.querySelectorAll('#f-prim .chip, #f-sec .chip').forEach(c=>{
+    c.onclick=()=>{const k=c.dataset.k,t=c.dataset.t;const arr=t==='f-prim'?PRIM:SEC;
+      const idx=arr.indexOf(k); if(idx>=0)arr.splice(idx,1); else arr.push(k);
+      renderChips();buildPreview();};
+  });
+}
+function openModal(id){
+  if(!AGENT){document.getElementById('gate').classList.remove('hide');return;}
+  CUR=ISSUES.find(i=>i.id===id);
+  FETCHED=null;FILES=[];
+  PRIM=[...ROUTE[CUR.sku].prim];SEC=[...ROUTE[CUR.sku].sec];
+  document.getElementById('mtitle').textContent='Raise on Slack — '+CUR.title;
+  document.getElementById('f-ticket').value='';
+  ['f-sku','f-install','f-city','f-lock','f-root','f-order'].forEach(x=>document.getElementById(x).value='');
+  document.getElementById('f-bucket').value=CUR.title;
+  document.getElementById('f-desc').value='';
+  document.getElementById('f-tat').value=nowStamp();
+  document.getElementById('f-msg').textContent='';document.getElementById('f-msg').className='fetchmsg';
+  document.getElementById('f-lock-hint').textContent='';
+  document.getElementById('f-lock').classList.remove('needask');
+  document.getElementById('f-sok').textContent='';
+  document.getElementById('f-filelist').innerHTML='';
+  renderChips();buildPreview();updateSendState();
+  document.getElementById('modal').classList.add('on');
+}
+function closeModal(){document.getElementById('modal').classList.remove('on');}
+
+/* Extension bridge: the fetch happens in the agent's own logged-in Jarvis session,
+   via the browser extension. The page asks the extension over window.postMessage. */
+let EXT_PRESENT=false;
+const EXT_WAITERS={};
+window.addEventListener('message',(e)=>{
+  if(e.source!==window)return;
+  const d=e.data;
+  if(!d||d.source!=='LOCKS_EXT')return;
+  if(d.type==='EXT_READY'){EXT_PRESENT=true;return;}
+  if(d.type==='LOOKUP_RESULT'&&d.reqId&&EXT_WAITERS[d.reqId]){
+    EXT_WAITERS[d.reqId](d.result);delete EXT_WAITERS[d.reqId];
+  }
+});
+function lookupViaExtension(id){
+  return new Promise((resolve,reject)=>{
+    if(!EXT_PRESENT){reject(new Error('EXT_MISSING'));return;}
+    const reqId='r'+Date.now()+Math.random().toString(36).slice(2);
+    EXT_WAITERS[reqId]=resolve;
+    window.postMessage({source:'LOCKS_PAGE',type:'LOOKUP_TICKET',reqId,id},window.location.origin);
+    setTimeout(()=>{if(EXT_WAITERS[reqId]){delete EXT_WAITERS[reqId];reject(new Error('TIMEOUT'));}},20000);
+  });
+}
+function applyFetched(d){
+  FETCHED=d;
+  document.getElementById('f-sku').value=d.sku||'';
+  document.getElementById('f-install').value=prettyDate(d.installDate)||'';
+  document.getElementById('f-city').value=cap(d.city)||'';
+  document.getElementById('f-root').value=d.rootRequestId||'';
+  document.getElementById('f-order').value=d.sourceOrderId||'';
+  const lockEl=document.getElementById('f-lock'),hint=document.getElementById('f-lock-hint');
+  if(d.lockNumber){lockEl.value=d.lockNumber;lockEl.readOnly=true;lockEl.classList.remove('needask');hint.className='hint';hint.textContent='Auto-fetched from the scan record.';}
+  else{lockEl.value='';lockEl.readOnly=false;lockEl.classList.add('needask');hint.className='hint warn';hint.textContent='Not on file — ask the customer for the lock serial before raising. Mandatory.';}
+  buildPreview();updateSendState();
+}
+function fetchTicket(){
+  const id=document.getElementById('f-ticket').value.trim();
+  const msg=document.getElementById('f-msg');
+  if(!id){msg.className='fetchmsg err';msg.textContent='Enter a ticket ID first.';return;}
+  msg.className='fetchmsg busy';msg.textContent='Fetching from ops…';
+  const btn=document.getElementById('f-fetch');btn.disabled=true;
+  lookupViaExtension(id).then(d=>{
+    btn.disabled=false;
+    if(d&&d.error){msg.className='fetchmsg err';msg.textContent='Lookup failed: '+d.error+'. Make sure you are logged into Jarvis in this browser.';return;}
+    if(!d||!d.found){msg.className='fetchmsg err';msg.textContent='No ticket found with that ID in the last 24 months.';return;}
+    applyFetched(d);
+    msg.className='fetchmsg ok';msg.textContent='Details fetched. Review, attach proofs, then send.';
+  }).catch(err=>{
+    btn.disabled=false;msg.className='fetchmsg err';
+    if(err.message==='EXT_MISSING')msg.textContent='Ticket Fetcher extension not detected. Install it, then reload this page.';
+    else if(err.message==='TIMEOUT')msg.textContent='Fetch timed out. Confirm you are logged into Jarvis, then retry.';
+    else msg.textContent='Lookup failed. Try again.';
+  });
+}
+
+function pocMentions(keys){return keys.map(k=>'<@'+POCS[k].id+'>').join(' ');}
+function pocPlain(keys){return keys.map(k=>POCS[k].n).join(', ');}
+function buildPreview(forSend){
+  const poc = forSend ? pocMentions : pocPlain;
+  const B = forSend ? (t)=>'*'+t+'*' : (t)=>t; // bold field titles in the sent Slack message
+  const root=document.getElementById('f-root').value, order=document.getElementById('f-order').value;
+  const lock=document.getElementById('f-lock').value.trim()||'—';
+  const txt=
+B('Root Request ID with link')+'\n'+(root?('https://ops.urbanclap.com/requests/'+root):'—')+'\n\n'+
+B('Order ID with link')+'\n'+(order?('https://ops.urbanclap.com/inventory/product-order/'+order):'—')+'\n\n'+
+B('SKU')+'\n'+(document.getElementById('f-sku').value||'—')+'\n\n'+
+B('Installation Date')+'\n'+(document.getElementById('f-install').value||'—')+'\n\n'+
+B('City')+'\n'+(document.getElementById('f-city').value||'—')+'\n\n'+
+B('Issue Bucket')+'\n'+(document.getElementById('f-bucket').value||'—')+'\n\n'+
+B('Issue Description')+'\n'+(document.getElementById('f-desc').value||'—')+'\n\n'+
+B('Lock Serial Number')+'\n'+lock+'\n\n'+
+B('Proofs attached as per SoP')+'\nYes\n\n'+
+B('POD escalation time')+'\n'+(document.getElementById('f-tat').value||'—')+'\n\n'+
+B('Primary PoC')+'\n'+(poc(PRIM)||'—')+'\n\n'+
+B('Secondary PoC')+'\n'+(poc(SEC)||'—')+'\n\n'+
+B('Request submitted by')+' : '+submitterTag(forSend);
+  if(!forSend)document.getElementById('f-preview').textContent=txt;
+  return txt;
+}
+['f-bucket','f-desc','f-tat','f-lock','f-sku','f-city','f-install'].forEach(id=>{
+  document.addEventListener('input',e=>{if(e.target&&e.target.id===id){buildPreview();updateSendState();}});
+});
+
+/* file attach */
+function fmtSize(b){return b>1048576?(b/1048576).toFixed(1)+' MB':(b/1024).toFixed(0)+' KB';}
+function renderFiles(){
+  document.getElementById('f-filelist').innerHTML=FILES.map((f,i)=>
+    '<div class="fileitem"><span class="fn">'+esc(f.name)+'</span><span class="fsz">'+fmtSize(f.size)+'</span><button class="frm" onclick="rmFile('+i+')">×</button></div>').join('');
+}
+function rmFile(i){FILES.splice(i,1);renderFiles();updateSendState();}
+document.getElementById('f-files').addEventListener('change',e=>{
+  for(const f of e.target.files)FILES.push(f);
+  e.target.value='';renderFiles();updateSendState();
+});
+const drop=document.getElementById('f-drop');
+['dragover','dragenter'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.style.borderColor='var(--accent)';}));
+['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.style.borderColor='';}));
+drop.addEventListener('drop',e=>{for(const f of e.dataTransfer.files)FILES.push(f);renderFiles();updateSendState();});
+
+function updateSendState(){
+  const lock=document.getElementById('f-lock').value.trim();
+  const hasLock=!!lock, hasProof=FILES.length>0, hasFetch=!!FETCHED;
+  const ok=hasLock&&hasProof&&hasFetch;
+  document.getElementById('f-send').disabled=!ok;
+  const w=document.getElementById('f-gatewarn');
+  if(ok){w.textContent='';return;}
+  const miss=[];
+  if(!hasFetch)miss.push('fetch ticket');
+  if(!hasLock)miss.push('lock serial');
+  if(!hasProof)miss.push('attach proof');
+  w.textContent='Required: '+miss.join(' · ');
+}
+
+/* ============ SEND: post message, then upload media into thread ============ */
+function uploadViaExtension(uploadUrl,file){
+  return new Promise((resolve,reject)=>{
+    if(!EXT_PRESENT){reject(new Error('EXT_MISSING'));return;}
+    const reqId='u'+Date.now()+Math.random().toString(36).slice(2);
+    EXT_WAITERS[reqId]=(r)=>{ r&&r.ok ? resolve() : reject(new Error((r&&r.error)||'Upload failed')); };
+    window.postMessage({source:'LOCKS_PAGE',type:'UPLOAD_TO_SLACK',reqId,uploadUrl,file},window.location.origin);
+    setTimeout(()=>{if(EXT_WAITERS[reqId]){delete EXT_WAITERS[reqId];reject(new Error('Upload timed out'));}},600000);
+  });
+}
+async function sendRaise(){
+  const send=document.getElementById('f-send'),sok=document.getElementById('f-sok');
+  send.disabled=true;send.textContent='Sending…';sok.style.color='';sok.textContent='';
+  try{
+    const text=buildPreview(true);
+    // 1) post the message
+    const r1=await fetch('/api/raise',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({phase:'post',text,submitterEmail:AGENT?AGENT.email:'',submitterName:AGENT?AGENT.name:''})});
+    const d1=await r1.json();
+    if(!d1.ok)throw new Error(d1.error||'Message failed');
+    // 2) each file: reserve URL (Vercel) -> upload bytes (extension). Collect file_ids.
+    const uploaded=[];
+    for(let i=0;i<FILES.length;i++){
+      const f=FILES[i];
+      send.textContent='Uploading '+(i+1)+'/'+FILES.length+'…';
+      const rr=await fetch('/api/raise',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({phase:'reserve',name:f.name,length:f.size})});
+      const dr=await rr.json();
+      if(!dr.ok)throw new Error('Reserve failed ('+f.name+'): '+(dr.error||'unknown'));
+      await uploadViaExtension(dr.upload_url,f);
+      uploaded.push({file_id:dr.file_id,name:f.name});
+    }
+    // 3) ONE complete call -> all media post as a single threaded message
+    if(uploaded.length){
+      send.textContent='Attaching…';
+      const rc=await fetch('/api/raise',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({phase:'complete',thread_ts:d1.ts,files:uploaded})});
+      const dc=await rc.json();
+      if(!dc.ok)throw new Error('Attach failed: '+(dc.error||'unknown'));
+    }
+    sok.innerHTML='✅ Raised in Slack.';
+    send.textContent='📤 Send to Slack';
+  }catch(err){
+    sok.style.color='var(--r)';
+    sok.textContent='⚠ '+(err.message==='EXT_MISSING'?'Ticket Fetcher extension needed to upload files. Install/enable it and reload.':err.message);
+    send.disabled=false;send.textContent='📤 Send to Slack';
+  }
+}
+
+/* ============ DARK MODE TOGGLE ============ */
+function applyMode(dark){
+  document.body.classList.toggle('dark',dark);
+  const btn=document.getElementById('modetoggle');
+  if(btn)btn.textContent=dark?'☀️ Light mode':'🌙 Dark mode';
+}
+function toggleMode(){
+  const dark=!document.body.classList.contains('dark');
+  localStorage.setItem('locksMode',dark?'dark':'light');
+  applyMode(dark);
+}
+
+/* ============ INIT ============ */
+buildDetails();setSku('ultra');
+applyMode(localStorage.getItem('locksMode')==='dark');
+initAuth();
+</script>
+</body>
+</html>
