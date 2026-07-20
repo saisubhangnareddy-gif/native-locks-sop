@@ -1,0 +1,18 @@
+{
+  "version": 2,
+  "cleanUrls": true,
+  "functions": {
+    "api/ticket.js": { "maxDuration": 30 },
+    "api/raise.js": { "maxDuration": 30 }
+  },
+  "headers": [
+    {
+      "source": "/videos/(.*).mp4",
+      "headers": [
+        { "key": "Content-Type", "value": "video/mp4" },
+        { "key": "Accept-Ranges", "value": "bytes" },
+        { "key": "Cache-Control", "value": "public, max-age=86400" }
+      ]
+    }
+  ]
+}
