@@ -1,8 +1,0 @@
-{
-  "version": 2,
-  "cleanUrls": true,
-  "functions": {
-    "api/ticket.js": { "maxDuration": 30 },
-    "api/raise.js": { "maxDuration": 30 }
-  }
-}
