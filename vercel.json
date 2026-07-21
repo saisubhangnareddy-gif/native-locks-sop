@@ -1,0 +1,6 @@
+{
+  "functions": {
+    "api/ticket.js": { "maxDuration": 30 },
+    "api/raise.js": { "maxDuration": 30 }
+  }
+}
