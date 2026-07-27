@@ -87,6 +87,35 @@ The old key was shared in chat — treat it as burned.
 
 ---
 
+## 6. Live-editable SOP content (Google Sheet)
+
+The product SOPs (the issue list, steps, Yes/No branches, actions, "Tell the customer"
+scripts, POW, media) can be edited in a Google Sheet without touching code. The portal
+reads the sheet at page load. If the sheet is missing or fails to load, the portal falls
+back to the **baked-in SOPs** in `index.html`, so it never shows empty content.
+
+**One-time setup:**
+1. Open the deployed portal with `#export-sop` at the end of the URL, e.g.
+   `https://native-locks-sop.vercel.app/#export-sop`. It downloads
+   `native-locks-sop-content.csv` — the current SOPs in the exact required format.
+2. In Google Sheets: **File → Import → Upload** that CSV → *Replace spreadsheet*.
+3. **File → Share → Publish to web** → choose the sheet/tab → **Comma-separated values (.csv)** → Publish. Copy the published CSV URL.
+4. In `index.html`, set `SOP_SHEET_URL = "<that published CSV URL>"`. Deploy.
+
+**Editing later:** just edit cells in the sheet and refresh the portal — changes appear
+(the portal loads fresh each visit). No code change, no redeploy.
+
+**Column format (header row, exact names):**
+`sku, issue_id, title, customer_says, severity, freq, media_json, pow, step_no, step_question, branch_type, action, tell_customer`
+- One **row per Yes/No/Do branch**. Rows sharing an `issue_id` form one issue; rows sharing `issue_id`+`step_no` form one step.
+- `sku`: `ultra` or `pro`. `severity`: `g` (green), `a` (amber), `r` (red). `branch_type`: `yes`, `no`, `yesno`, or `do`.
+- `media_json`: leave blank, or the media object as JSON (the exporter fills this for issues that have a reference video/image). `pow`: the POW checklist items joined with `|`.
+- `title`, `customer_says`, `media_json`, `pow`, `freq`, `severity` only need to be filled on the **first row** of each issue (the loader reads them from there).
+
+> Non-product buckets remain baked-in for now (they are internal escalation flows, not customer-facing SOPs). Ask if you want those sheet-driven too.
+
+---
+
 ## Notes / decisions baked in
 - **Media never passes through the server** — the browser uploads file bytes straight to Slack's upload URL, so large videos are fine (no Vercel body-size limit involved).
 - **Two mandatory gates:** lock serial present AND ≥1 proof attached, else Send is disabled.
