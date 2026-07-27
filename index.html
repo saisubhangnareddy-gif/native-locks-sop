@@ -941,7 +941,7 @@ const SKULBL={ultra:["skutag-ultra","Ultra"],pro:["skutag-pro","Pro"]};
    L1 Complaint Tag, Priority, Ticket Description, Primary/Secondary POC.
    `tag` maps to the L1 Complaint Tag values seen in the channel (product / delivery
    / customer / payment). Buckets derived from analysing the channel's real traffic. */
-const NP_ISSUES=[
+let NP_ISSUES=[
   {id:"np-cx",cat:"CX-led grievance",sev:"r",title:"CX-led grievance",tag:"customer",priority:"P1",
    say:"Customer threatening refund / consumer court / social media / founder or email VOC, or repeated dissatisfaction",
    steps:[
@@ -1869,6 +1869,7 @@ function parseCSVMultiline(text){
    loads valid rows, we rebuild ISSUES from the sheet so content edits go live
    without any code change. */
 const ISSUES_BAKED = ISSUES.slice(); // preserve the built-in copy as fallback
+const NP_ISSUES_BAKED = NP_ISSUES.slice(); // baked-in non-product fallback
 
 /* Serialize an issue's media object to compact JSON for the CSV (or '' if none). */
 function mediaToJSON(m){ return m ? JSON.stringify(m) : ''; }
@@ -1878,6 +1879,7 @@ function mediaToJSON(m){ return m ? JSON.stringify(m) : ''; }
 function issuesFromRows(rows){
   const byId={}, order=[];
   rows.forEach(r=>{
+    if((r.sku||'').trim().toLowerCase()==='np') return; // np rows handled separately
     const id=(r.issue_id||'').trim(); if(!id)return;
     if(!byId[id]){
       order.push(id);
@@ -1915,6 +1917,42 @@ function issuesFromRows(rows){
   });
 }
 
+/* Rebuild NON-PRODUCT buckets from rows where sku === "np". Uses cat/tag/priority columns. */
+function npIssuesFromRows(rows){
+  const byId={}, order=[];
+  rows.forEach(r=>{
+    if((r.sku||'').trim().toLowerCase()!=='np') return;
+    const id=(r.issue_id||'').trim(); if(!id)return;
+    if(!byId[id]){
+      order.push(id);
+      byId[id]={
+        id:id,
+        cat:(r.cat||r.title||'').trim(),
+        title:(r.title||'').trim(),
+        tag:(r.tag||'').trim(),
+        priority:(r.priority||'P2').trim(),
+        sev:(r.severity||'a').trim().toLowerCase(),
+        say:(r.customer_says||'').trim(),
+        pow:(r.pow||'').split('|').map(s=>s.trim()).filter(Boolean),
+        _steps:{}
+      };
+    }
+    const iss=byId[id];
+    const sn=parseInt(r.step_no,10)||1;
+    if(!iss._steps[sn]) iss._steps[sn]={q:(r.step_question||'').trim(),br:[]};
+    if(!iss._steps[sn].q && (r.step_question||'').trim()) iss._steps[sn].q=(r.step_question||'').trim();
+    const yn=(r.branch_type||'do').trim().toLowerCase();
+    const branch={yn:(yn==='yes'||yn==='no'||yn==='yesno')?yn:'do',act:(r.action||'').trim()};
+    const cust=(r.tell_customer||'').trim(); if(cust)branch.cust=cust;
+    iss._steps[sn].br.push(branch);
+  });
+  return order.map(id=>{
+    const iss=byId[id];
+    const steps=Object.keys(iss._steps).map(Number).sort((a,b)=>a-b).map(n=>iss._steps[n]);
+    delete iss._steps; iss.steps=steps; return iss;
+  });
+}
+
 /* Load SOPs from the sheet; on any failure keep the baked-in copy. Returns a promise. */
 async function loadSOPsFromSheet(){
   if(!SOP_SHEET_URL) return false;
@@ -1923,12 +1961,15 @@ async function loadSOPsFromSheet(){
     const t=await r.text();
     const rows=parseCSVMultiline(t);
     if(!rows.length) return false;
+    // Product SOPs (non-np rows)
     const built=issuesFromRows(rows);
-    // sanity: need at least a few valid issues with steps, else fall back
     const ok=built.filter(i=>i.title && i.steps && i.steps.length).length;
-    if(ok<3) return false;
-    ISSUES=built;
-    return true;
+    if(ok>=3) ISSUES=built;         // else keep baked-in product SOPs
+    // Non-product buckets (np rows) — independent fallback
+    const npBuilt=npIssuesFromRows(rows);
+    const npOk=npBuilt.filter(i=>i.title && i.steps && i.steps.length).length;
+    if(npOk>=1) NP_ISSUES=npBuilt;  // else keep baked-in NP buckets
+    return (ok>=3)||(npOk>=1);
   }catch(e){ return false; }
 }
 
@@ -1937,15 +1978,30 @@ async function loadSOPsFromSheet(){
    Google Sheets, publish to web as CSV, and paste the URL into SOP_SHEET_URL. */
 function csvCell(v){ v=(v==null?'':String(v)); return '"'+v.replace(/"/g,'""')+'"'; }
 function exportSOPsCSV(){
-  const headers=['sku','issue_id','title','customer_says','severity','freq','media_json','pow','step_no','step_question','branch_type','action','tell_customer'];
+  const headers=['sku','issue_id','title','customer_says','severity','freq','media_json','pow','step_no','step_question','branch_type','action','tell_customer','cat','tag','priority'];
   const lines=[headers.join(',')];
+  // Product issues (cat/tag/priority left blank)
   ISSUES_BAKED.forEach(i=>{
     const media=mediaToJSON(i.media), pow=(i.pow||[]).join('|');
     i.steps.forEach((st,si)=>{
       st.br.forEach(b=>{
         lines.push([
           csvCell(i.sku),csvCell(i.id),csvCell(i.title),csvCell(i.say),csvCell(i.sev),csvCell(i.freq),
-          csvCell(media),csvCell(pow),csvCell(si+1),csvCell(st.q),csvCell(b.yn),csvCell(b.act),csvCell(b.cust||'')
+          csvCell(media),csvCell(pow),csvCell(si+1),csvCell(st.q),csvCell(b.yn),csvCell(b.act),csvCell(b.cust||''),
+          csvCell(''),csvCell(''),csvCell('')
+        ].join(','));
+      });
+    });
+  });
+  // Non-product buckets (sku=np; uses cat/tag/priority; no media/freq)
+  NP_ISSUES_BAKED.forEach(i=>{
+    const pow=(i.pow||[]).join('|');
+    i.steps.forEach((st,si)=>{
+      st.br.forEach(b=>{
+        lines.push([
+          csvCell('np'),csvCell(i.id),csvCell(i.title),csvCell(i.say),csvCell(i.sev),csvCell(''),
+          csvCell(''),csvCell(pow),csvCell(si+1),csvCell(st.q),csvCell(b.yn),csvCell(b.act),csvCell(b.cust||''),
+          csvCell(i.cat||''),csvCell(i.tag||''),csvCell(i.priority||'')
         ].join(','));
       });
     });
