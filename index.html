@@ -541,9 +541,9 @@
         <div class="fetchmsg" id="np-msg"></div>
       </div>
       <div class="fld"><label>Customer Request ID</label><input id="np-creq" readonly></div>
-      <div class="fld"><label>Customer User ID (profile) <span style="color:var(--muted)">(enter manually)</span></label>
-        <input id="np-cust" placeholder="Profile ID or ops.urbanclap.com/customers/profile/…">
-        <div class="hint">Auto-fetch fills this only if ops exposes it; otherwise paste the customer's profile ID.</div>
+      <div class="fld"><label>Customer User ID (profile)</label>
+        <input id="np-cust" placeholder="Auto-filled on Fetch; or paste the profile ID">
+        <div class="hint">Auto-filled from ops on Fetch. You can edit it if needed.</div>
       </div>
       <div class="twocol">
         <div class="fld"><label>L1 Complaint Tag</label><input id="np-tag" placeholder="e.g. product / delivery / payment"></div>
@@ -1719,7 +1719,7 @@ function openNPModal(id){
   NP_FILES=[];NP_FETCHED=null;NP_TICKET='';
   const rt=(NP_CUR&&NP_ROUTE[NP_CUR.id])||NP_ROUTE._default;
   NP_PRIM=[...rt.prim];NP_SEC=[...rt.sec];
-  document.getElementById('np-cat').innerHTML=ic('box',14)+' '+esc(NP_CUR?NP_CUR.cat+': '+NP_CUR.title:'Non-product escalation');
+  document.getElementById('np-cat').innerHTML=ic('box',14)+' '+esc(NP_CUR?(NP_CUR.cat===NP_CUR.title?NP_CUR.title:NP_CUR.cat+': '+NP_CUR.title):'Non-product escalation');
   document.getElementById('np-mtitle').textContent='Raise on #epc-stores-escalations';
   ['np-ticket','np-creq','np-cust','np-tag','np-desc'].forEach(x=>document.getElementById(x).value='');
   document.getElementById('np-tag').value=NP_CUR?(NP_CUR.tag||''):'';
