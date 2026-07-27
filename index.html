@@ -499,6 +499,7 @@
       </div>
 
       <div class="fld"><label>Customer Request ID</label><input id="f-creq" readonly></div>
+      <div class="fld"><label>Customer Profile ID</label><input id="f-cust" readonly></div>
       <div class="fld"><label>Order ID</label><input id="f-order" readonly></div>
 
       <div class="fld"><label>Issue Bucket</label><input id="f-bucket"></div>
@@ -1354,9 +1355,9 @@ function openModalCommon(routeSku,bucketVal,titleOverride){
   PRIM=[...ROUTE[routeSku].prim];SEC=[...ROUTE[routeSku].sec];
   document.getElementById('mtitle').textContent='Raise on Slack: '+(titleOverride||bucketVal);
   document.getElementById('f-ticket').value='';
-  ['f-sku','f-bdate','f-iend','f-city','f-lock','f-creq','f-order'].forEach(x=>document.getElementById(x).value='');
+  ['f-sku','f-bdate','f-iend','f-city','f-lock','f-creq','f-cust','f-order'].forEach(x=>document.getElementById(x).value='');
   // re-lock any fields that a prior manual-entry session unlocked
-  ['f-sku','f-city','f-bdate','f-iend','f-creq','f-order'].forEach(x=>{document.getElementById(x).readOnly=true;});
+  ['f-sku','f-city','f-bdate','f-iend','f-creq','f-cust','f-order'].forEach(x=>{document.getElementById(x).readOnly=true;});
   document.getElementById('f-bucket').value=bucketVal||'';
   document.getElementById('f-desc').value='';
   document.getElementById('f-tat').value=nowStamp();
@@ -1441,6 +1442,7 @@ function applyFetched(ops,sheet){
   FETCHED=Object.assign({},ops,{sheet});
   document.getElementById('f-order').value=ops.sourceOrderId||'';
   document.getElementById('f-creq').value=(sheet&&sheet.CUSTOMER_REQUEST_ID)||ops.customerRequestId||'';
+  document.getElementById('f-cust').value=ops.customerUserId||'';
   document.getElementById('f-city').value=cap(ops.city)||'';
   // enrichment from the sheet (SKU, lock, dates)
   const sku=sheet?sheet.SKU_NAME:'', bdate=sheet?sheet.BDATE_FINAL:'', iend=sheet?sheet.INSTALLATION_END:'';
@@ -1487,7 +1489,7 @@ function fetchTicket(){
 
 /* Manual-entry fallback: when the ops/sheet fetch fails, the agent can type every
    detail by hand. Unlocks the readonly fields and satisfies the send gate. */
-const MANUAL_FIELDS=['f-sku','f-city','f-bdate','f-iend','f-creq','f-order','f-lock'];
+const MANUAL_FIELDS=['f-sku','f-city','f-bdate','f-iend','f-creq','f-cust','f-order','f-lock'];
 function enableManual(){
   MANUAL_FIELDS.forEach(x=>{const el=document.getElementById(x);if(el){el.readOnly=false;el.classList.remove('needask');}});
   const lockHint=document.getElementById('f-lock-hint');
@@ -1504,6 +1506,7 @@ function buildPreview(forSend){
   const poc = forSend ? pocMentions : pocPlain;
   const B = forSend ? (t)=>'*'+t+'*' : (t)=>t; // bold field titles in the sent Slack message
   const creq=document.getElementById('f-creq').value, order=document.getElementById('f-order').value;
+  const cust=document.getElementById('f-cust').value;
   const lock=document.getElementById('f-lock').value.trim()||'—';
   const tagLine = MODE==='unknown' ? (B('Escalation Type')+'\nUnknown Issue\n\n')
                 : MODE==='oldersku' ? (B('Escalation Type')+'\nOlder SKU\n\n')
@@ -1511,6 +1514,7 @@ function buildPreview(forSend){
   const txt=
 tagLine+
 B('Customer Request ID with link')+'\n'+(creq?('https://ops.urbanclap.com/requests/'+creq):'—')+'\n\n'+
+B('Customer Profile ID with link')+'\n'+opsLink('https://ops.urbanclap.com/customers/profile/',cust)+'\n\n'+
 B('Order ID with link')+'\n'+(order?('https://ops.urbanclap.com/inventory/product-order/'+order):'—')+'\n\n'+
 B('SKU')+'\n'+(document.getElementById('f-sku').value||'—')+'\n\n'+
 B('Booking date')+'\n'+(document.getElementById('f-bdate').value||'—')+'\n\n'+
@@ -1526,7 +1530,7 @@ B('Request submitted by')+' : '+submitterTag(forSend);
   if(!forSend)document.getElementById('f-preview').textContent=txt;
   return txt;
 }
-['f-bucket','f-desc','f-tat','f-lock','f-sku','f-city','f-bdate','f-iend','f-creq','f-order'].forEach(id=>{
+['f-bucket','f-desc','f-tat','f-lock','f-sku','f-city','f-bdate','f-iend','f-creq','f-cust','f-order'].forEach(id=>{
   document.addEventListener('input',e=>{if(e.target&&e.target.id===id){buildPreview();updateSendState();}});
 });
 
