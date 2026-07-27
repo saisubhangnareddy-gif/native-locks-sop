@@ -632,13 +632,16 @@ Object.assign(POCS,NP_POCS_EXTRA);
 const NP_POC_KEYS=["sindhu","sudaksha","aditya","arpit","manu","kunal","jyothi","sita","titas","subhang"];
 /* Default primary/secondary per bucket id (falls back to the generic default). */
 const NP_ROUTE={
-  "np-cx":{prim:["manu"],sec:["kunal","sita"]},
-  "np-install":{prim:["sindhu"],sec:["sudaksha","aditya"]},
+  "np-incompatible":{prim:["manu","sindhu"],sec:["sudaksha","kunal"]},
+  "np-return":{prim:["manu"],sec:["kunal","sita"]},
   "np-pxnoshow":{prim:["aditya","sindhu"],sec:["sudaksha","kunal"]},
-  "np-pickup":{prim:["sindhu"],sec:["sudaksha"]},
-  "np-return":{prim:["manu"],sec:["kunal"]},
+  "np-installpending":{prim:["sindhu"],sec:["sudaksha","aditya"]},
+  "np-customer":{prim:["manu"],sec:["kunal","sita"]},
   "np-payment":{prim:["manu"],sec:["kunal","sita"]},
-  "np-rf":{prim:["sindhu","aditya"],sec:["sudaksha","kunal"]},
+  "np-delivery":{prim:["sindhu"],sec:["sudaksha","kunal"]},
+  "np-dooralign":{prim:["manu","sindhu"],sec:["sita","sudaksha"]},
+  "np-doordamage":{prim:["manu","kunal"],sec:["sita","arpit"]},
+  "np-critical":{prim:["manu","kunal"],sec:["sita","subhang"]},
   _default:{prim:["manu"],sec:["kunal","sita"]}
 };
 /* The sent message uses a {{SUBMITTER}} placeholder; Vercel resolves it to a Slack
@@ -942,75 +945,105 @@ const SKULBL={ultra:["skutag-ultra","Ultra"],pro:["skutag-pro","Pro"]};
    `tag` maps to the L1 Complaint Tag values seen in the channel (product / delivery
    / customer / payment). Buckets derived from analysing the channel's real traffic. */
 let NP_ISSUES=[
-  {id:"np-cx",cat:"CX-led grievance",sev:"r",title:"CX-led grievance",tag:"customer",priority:"P1",
-   say:"Customer threatening refund / consumer court / social media / founder or email VOC, or repeated dissatisfaction",
+  {id:"np-incompatible",cat:"Product Incompatible",sev:"a",title:"Product Incompatible",tag:"product",priority:"P1",
+   say:"Door not compatible with the lock (thickness, double door, glass/metal, design) so it cannot be installed",
    steps:[
-     {q:"Confirm the grievance and check the dashboard status before raising (do not duplicate an open escalation).",br:[
-       {yn:"do",act:"Log the VOC (voice of customer) verbatim, including any email/complaint number."}]},
-     {q:"Is the customer threatening external escalation (consumer court / social media / grievance officer / founder)?",br:[
-       {yn:"yes",act:"Raise on #epc-stores-escalations as P1 with the full VOC and tag the POCs. Mark urgency clearly."},
-       {yn:"no",act:"Raise as P2 with the grievance summary and current dashboard status."}]}],
-   pow:["The customer's VOC (verbatim) + email/complaint number","Current dashboard status / screenshot","Ticket & Customer Request ID"]},
+     {q:"Confirm the incompatibility reason with the PX/trainer (thickness, double door, design) and capture door photos.",br:[
+       {yn:"do",act:"Capture clear photos of the door + the PX/trainer's reason. Explain to the customer why the lock is incompatible."}]},
+     {q:"Does the customer still want installation despite the incompatibility?",br:[
+       {yn:"yes",act:"Get written confirmation that the customer accepts any door-damage risk and no alignment warranty. Then raise on #epc-stores-escalations to align a PX; tag the POCs.",cust:"We can attempt installation only if you're comfortable with possible door modification and no warranty on alignment. Please confirm and we'll arrange a technician."},
+       {yn:"no",act:"Raise on #epc-stores-escalations to align a pickup / return; tag the POCs.",cust:"Since the door isn't compatible, we'll arrange a pickup and process the return for you."}]}],
+   pow:["Photos of the door","PX/trainer's incompatibility reason","Ticket & Customer Request ID"]},
 
-  {id:"np-install",cat:"Installation blocked (door/fit)",sev:"a",title:"Installation blocked (door / fit)",tag:"product",priority:"P2",
-   say:"Lock can't be installed: door panel size, door design, carpenter needed, or PX refused to install",
+  {id:"np-return",cat:"Return & Refund",sev:"a",title:"Return & Refund",tag:"customer",priority:"P2",
+   say:"Customer wants to return the lock or a refund/return needs to be punched and approved",
    steps:[
-     {q:"Confirm the exact blocker with the PX / trainer (door size, design, panel thickness).",br:[
-       {yn:"do",act:"Capture photos of the door and the fit issue. Give the customer a clear soft denial with the reason."}]},
-     {q:"Does the customer still want installation after the soft denial?",br:[
-       {yn:"yes",act:"Raise on #epc-stores-escalations with the door photos and the PX's reason; tag the POCs to confirm feasibility or a senior PX visit."},
-       {yn:"no",act:"Log the denial and, if the customer wants, move to the Return / refund flow."}]}],
-   pow:["Photos of the door / fit issue","PX or trainer's reason for the block","Ticket & Customer Request ID"]},
-
-  {id:"np-pxnoshow",cat:"PX no-show / revisit delay",sev:"r",title:"PX no-show / revisit delay",tag:"delivery",priority:"P1",
-   say:"Professional didn't show, no PX available, or the visit has been rescheduled multiple times",
-   steps:[
-     {q:"Check the job/visit status on the dashboard and how many times it has been rescheduled.",br:[
-       {yn:"do",act:"Note the last scheduled date, the no-show count, and the customer's availability window."}]},
-     {q:"Is a fresh visit still not assigned or the customer is highly dissatisfied?",br:[
-       {yn:"yes",act:"Raise on #epc-stores-escalations to assign another PX urgently; tag the POCs with the customer's availability."},
-       {yn:"no",act:"Confirm the next visit date to the customer and keep the case open."}]}],
-   pow:["Job/visit status screenshot","No-show count + last scheduled date","Customer's availability window"]},
-
-  {id:"np-pickup",cat:"Pickup / reverse-logistics",sev:"a",title:"Pickup / reverse-logistics",tag:"delivery",priority:"P2",
-   say:"Return pickup stuck: 'out for pickup', pickup unsuccessful, warehouse closed, or courier not aligned",
-   steps:[
-     {q:"Check the pickup status and the AWB/tracking on the order.",br:[
-       {yn:"do",act:"Capture the pickup status screenshot and note the tracking ID."}]},
-     {q:"Is the pickup overdue or repeatedly failing?",br:[
-       {yn:"yes",act:"Raise on #epc-stores-escalations to re-align the pickup (Blue Dart / porter); tag the POCs with the tracking ID."},
-       {yn:"no",act:"Confirm the pickup date to the customer and keep the case open."}]}],
-   pow:["Pickup status screenshot","AWB / tracking ID","Ticket & Customer Request ID"]},
-
-  {id:"np-return",cat:"Return / refund approval",sev:"a",title:"Return / refund approval",tag:"customer",priority:"P2",
-   say:"Customer wants to return the lock or needs a return/refund approval punched",
-   steps:[
-     {q:"Confirm the reason for return and that all resolution steps have been exhausted.",br:[
-       {yn:"do",act:"Note the reason and attach any supporting proof (unresolved issue, denial, etc.)."}]},
+     {q:"Confirm the return reason and that resolution steps have been exhausted; check the dashboard status.",br:[
+       {yn:"do",act:"Note the reason (incompatible / unresolved fault / CX request) and attach supporting proof."}]},
      {q:"Is a return/refund the agreed outcome?",br:[
-       {yn:"yes",act:"Raise on #epc-stores-escalations requesting the return be approved/punched; tag the POCs."},
-       {yn:"no",act:"Continue with the relevant product/non-product SOP before requesting a return."}]}],
-   pow:["Reason for return","Proof that resolution steps were exhausted","Ticket & Customer Request ID"]},
+       {yn:"yes",act:"Raise on #epc-stores-escalations requesting the return be punched and approved; tag the POCs.",cust:"We'll arrange the pickup and process your return/refund. You'll get updates as it moves."},
+       {yn:"no",act:"Continue the relevant SOP before requesting a return."}]}],
+   pow:["Return reason","Proof resolution was attempted","Ticket & Customer Request ID"]},
 
-  {id:"np-payment",cat:"Payment / refund",sev:"a",title:"Payment / refund",tag:"payment",priority:"P2",
-   say:"Refund not processed, double charge, payment stuck, or pricing dispute",
+  {id:"np-pxnoshow",cat:"PX No Show",sev:"r",title:"PX No Show",tag:"delivery",priority:"P1",
+   say:"Professional didn't show up, no PX available, or the visit was rescheduled multiple times",
    steps:[
-     {q:"Verify the payment/refund status on the order before raising.",br:[
-       {yn:"do",act:"Capture the payment/refund screenshot and the exact amount and date in dispute."}]},
-     {q:"Is the refund overdue beyond the committed TAT?",br:[
-       {yn:"yes",act:"Raise on #epc-stores-escalations with the payment proof and tag the POCs for a finance check."},
-       {yn:"no",act:"Advise the customer of the expected TAT; raise only if the customer insists or the TAT has passed."}]}],
-   pow:["Payment / refund screenshot","Amount and date in dispute","Ticket & Customer Request ID"]},
+     {q:"Check the job/visit status and how many times it was rescheduled or the PX no-showed.",br:[
+       {yn:"do",act:"Note the last scheduled date, no-show count, and the customer's availability window."}]},
+     {q:"Is a fresh visit still unassigned or the customer highly dissatisfied?",br:[
+       {yn:"yes",act:"Raise on #epc-stores-escalations to assign another PX urgently; tag the POCs with the availability window.",cust:"I'm sorry about the missed visit. We're assigning another professional on priority and will confirm the slot."},
+       {yn:"no",act:"Confirm the next visit date to the customer and keep the case open."}]}],
+   pow:["Job/visit status screenshot","No-show count + last scheduled date","Customer availability window"]},
 
-  {id:"np-rf",cat:"Installation support (RF / electrician)",sev:"a",title:"Installation support (RF / electrician)",tag:"product",priority:"P2",
-   say:"RF module / doorbell needs an electrician, wiring help, or PX support during install",
+  {id:"np-installpending",cat:"Installation Pending",sev:"a",title:"Installation Pending",tag:"delivery",priority:"P2",
+   say:"Lock delivered but installation is pending/delayed, or the customer is awaiting a PX visit",
    steps:[
-     {q:"Confirm whether the blocker is wiring/RF (needs an electrician) vs a lock fault.",br:[
-       {yn:"do",act:"If VSAT/PX refuses RF wiring, advise the customer to arrange their own electrician; capture what support is needed."}]},
-     {q:"Does the customer need UC-side coordination or a technical person on call?",br:[
-       {yn:"yes",act:"Raise on #epc-stores-escalations to align a technician/electrician touchpoint; tag the POCs."},
-       {yn:"no",act:"Guide the customer through the RF/wiring step and keep the case open."}]}],
-   pow:["What RF / wiring support is needed","Any PX/VSAT refusal note","Ticket & Customer Request ID"]}
+     {q:"Check whether a job is created and its current status on the dashboard.",br:[
+       {yn:"do",act:"Confirm whether a PX/job is aligned and the expected date."}]},
+     {q:"Is the installation delayed beyond the committed TAT or no job aligned?",br:[
+       {yn:"yes",act:"Raise on #epc-stores-escalations to align/expedite the installation; tag the POCs.",cust:"We're aligning your installation on priority and will confirm the visit date shortly."},
+       {yn:"no",act:"Confirm the scheduled date to the customer and keep the case open."}]}],
+   pow:["Job/installation status screenshot","Committed vs current date","Ticket & Customer Request ID"]},
+
+  {id:"np-customer",cat:"Customer-Led",sev:"a",title:"Customer-Led",tag:"customer",priority:"P2",
+   say:"Customer request, dissatisfaction, or demand that needs desk intervention (not covered by another bucket)",
+   steps:[
+     {q:"Capture the customer's exact request/VOC and check the dashboard status.",br:[
+       {yn:"do",act:"Log the VOC verbatim and what has already been done."}]},
+     {q:"Does it need desk intervention to resolve?",br:[
+       {yn:"yes",act:"Raise on #epc-stores-escalations with the VOC and context; tag the POCs.",cust:"Thank you for the details. I'm escalating this to the right team and will keep you posted."},
+       {yn:"no",act:"Resolve on call and log the outcome."}]}],
+   pow:["Customer VOC (verbatim)","What was already attempted","Ticket & Customer Request ID"]},
+
+  {id:"np-payment",cat:"Payment-Led",sev:"a",title:"Payment-Led",tag:"payment",priority:"P2",
+   say:"Refund not processed, double charge, payment stuck, GST/invoice, or a pricing dispute",
+   steps:[
+     {q:"Verify the payment/refund status and the exact amount and date in dispute.",br:[
+       {yn:"do",act:"Capture the payment/refund screenshot and the amount/date."}]},
+     {q:"Is the refund overdue beyond TAT or a genuine payment issue?",br:[
+       {yn:"yes",act:"Raise on #epc-stores-escalations with the payment proof for a finance check; tag the POCs.",cust:"I've escalated your payment/refund for a finance check and will update you on the timeline."},
+       {yn:"no",act:"Advise the customer of the expected TAT; raise only if it has passed or the customer insists."}]}],
+   pow:["Payment/refund screenshot","Amount and date in dispute","Ticket & Customer Request ID"]},
+
+  {id:"np-delivery",cat:"Delivery-Led",sev:"a",title:"Delivery-Led",tag:"delivery",priority:"P2",
+   say:"Delivery delay, wrong/missing item, damaged-in-transit, or pickup / reverse-logistics stuck",
+   steps:[
+     {q:"Check the delivery/pickup status and the AWB/tracking on the order.",br:[
+       {yn:"do",act:"Capture the status screenshot and note the tracking ID; for wrong/missing/damaged item, collect photos."}]},
+     {q:"Is the delivery/pickup delayed, failing, or the item wrong/damaged?",br:[
+       {yn:"yes",act:"Raise on #epc-stores-escalations to re-align delivery/pickup (Blue Dart / porter) or a replacement; tag the POCs.",cust:"We're re-aligning the logistics on priority and will share the updated tracking with you."},
+       {yn:"no",act:"Confirm the delivery/pickup date to the customer and keep the case open."}]}],
+   pow:["Delivery/pickup status screenshot","AWB / tracking ID (or item photos)","Ticket & Customer Request ID"]},
+
+  {id:"np-dooralign",cat:"Door Alignment Issue",sev:"a",title:"Door Alignment Issue",tag:"product",priority:"P2",
+   say:"Door/frame alignment prevents smooth locking, or alignment work is needed for installation",
+   steps:[
+     {q:"Confirm the alignment problem with the PX (frame gap, sag, strike alignment) and capture photos/video.",br:[
+       {yn:"do",act:"Capture the alignment issue on video/photo and note the PX's assessment."}]},
+     {q:"Can it be fixed with a revisit / minor door work the customer permits?",br:[
+       {yn:"yes",act:"Raise on #epc-stores-escalations to align a revisit for alignment correction (get customer permission for any frame work); tag the POCs.",cust:"A technician will visit to correct the alignment. Some minor frame adjustment may be needed with your permission."},
+       {yn:"no",act:"If the customer declines work or it's not feasible, move to Product Incompatible or Return & Refund."}]}],
+   pow:["Photos/video of the alignment issue","PX assessment","Ticket & Customer Request ID"]},
+
+  {id:"np-doordamage",cat:"Door Damage",sev:"r",title:"Door Damage",tag:"product",priority:"P1",
+   say:"Door damaged during installation, or the customer claims damage and wants repair/compensation",
+   steps:[
+     {q:"Collect before/after photos and determine whether the damage was PX-caused or customer-side (own carpenter, forced install).",br:[
+       {yn:"do",act:"Capture clear damage photos, the PX's account, and any prior no-liability confirmation from the customer."}]},
+     {q:"Is UC responsible (PX-caused damage against advice or without warning)?",br:[
+       {yn:"yes",act:"Raise on #epc-stores-escalations as P1 for repair/compensation approval; tag the POCs with all photos and VOC.",cust:"I'm sorry about the damage. I'm escalating this for a repair/compensation review and will update you."},
+       {yn:"no",act:"Share the no-liability context with the desk; raise on #epc-stores-escalations for a decision; tag the POCs."}]}],
+   pow:["Before/after damage photos","PX account + any no-liability confirmation","Ticket & Customer Request ID"]},
+
+  {id:"np-critical",cat:"Critical",sev:"r",title:"Critical (social media / Twitter)",tag:"customer",priority:"P1",
+   say:"Social media or Twitter cases, or a customer publicly threatening to post / going viral",
+   steps:[
+     {q:"Capture the exact post/threat and customer VOC; check the dashboard status.",br:[
+       {yn:"do",act:"Screenshot the social-media post/handle or the threat, and log the VOC verbatim."}]},
+     {q:"Is it live on social media or an imminent public threat?",br:[
+       {yn:"yes",act:"Raise on #epc-stores-escalations as P1 marked CRITICAL with the screenshot and VOC; tag the POCs and flag urgency.",cust:"I completely understand your frustration. I'm escalating this to our senior team right now for the fastest possible resolution."},
+       {yn:"no",act:"Raise as P1 with the VOC and note the risk of it going public; tag the POCs."}]}],
+   pow:["Screenshot of the social-media post / threat","Customer VOC (verbatim)","Ticket & Customer Request ID"]}
 ];
 let activeSku="ultra";
 
