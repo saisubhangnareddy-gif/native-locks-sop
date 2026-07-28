@@ -16,7 +16,9 @@ const CHANNEL_ID = process.env.SLACK_CHANNEL_ID || "C07GZK9UKQW";
 // Non-product escalations go to #epc-stores-escalations. Allowlisted so the client
 // can only target known channels, never an arbitrary one.
 const EPC_CHANNEL_ID = process.env.SLACK_EPC_CHANNEL_ID || "C03KCDYQ3H8";
-const ALLOWED_CHANNELS = { product: CHANNEL_ID, epc: EPC_CHANNEL_ID };
+// Delivery-led non-product escalations go to #native-locks-delivery.
+const DELIVERY_CHANNEL_ID = process.env.SLACK_DELIVERY_CHANNEL_ID || "C07PH66FDJM";
+const ALLOWED_CHANNELS = { product: CHANNEL_ID, epc: EPC_CHANNEL_ID, delivery: DELIVERY_CHANNEL_ID };
 function pickChannel(target) { return ALLOWED_CHANNELS[target] || CHANNEL_ID; }
 
 async function slackJSON(method, token, body) {
