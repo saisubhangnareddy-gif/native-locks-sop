@@ -57,6 +57,27 @@
   .maintabs .mt[data-tab="nonproduct"].on{background:var(--npaccent)}
   body.np-active{--accent:var(--npaccent);--brand2:var(--npaccent);--brandsoft:var(--npsoft)}
   body.dark .maintabs .mt.on{color:#0e161f;box-shadow:0 0 16px rgba(159,176,196,.35)}
+  /* LOCKOUT: a critical tab that glows red so agents spot it instantly */
+  .maintabs .mt[data-tab="lockout"]{color:#c0392b}
+  .maintabs .mt-lock{position:relative;border:1px solid rgba(224,66,49,.55);box-shadow:0 0 0 0 rgba(224,66,49,.5);animation:lockglow 1.8s ease-in-out infinite}
+  .maintabs .mt-lock .lockdot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#e04231;margin-right:7px;vertical-align:middle;box-shadow:0 0 6px #e04231}
+  .maintabs .mt[data-tab="lockout"].on{background:#e04231;color:#fff;animation:none;border-color:transparent}
+  .maintabs .mt[data-tab="lockout"].on .lockdot{background:#fff;box-shadow:0 0 6px rgba(255,255,255,.8)}
+  @keyframes lockglow{0%,100%{box-shadow:0 0 0 0 rgba(224,66,49,.45)}50%{box-shadow:0 0 0 6px rgba(224,66,49,0)}}
+  body.dark .maintabs .mt-lock{border-color:rgba(255,107,92,.6)}
+  body.dark .maintabs .mt[data-tab="lockout"].on{color:#fff}
+  /* Lockout page critical banner */
+  .lockhero{border:1px solid rgba(224,66,49,.4);background:linear-gradient(180deg,rgba(224,66,49,.10),rgba(224,66,49,.02));border-radius:14px;padding:16px 18px;margin-bottom:18px;display:flex;gap:14px;align-items:flex-start}
+  .lockhero .lh-ic{flex:none;width:40px;height:40px;border-radius:10px;background:#e04231;color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(224,66,49,.4)}
+  .lockhero .lh-h{font-size:18px;font-weight:900;letter-spacing:-.01em;color:#c0392b;margin-bottom:3px}
+  body.dark .lockhero .lh-h{color:#ff8a7a}
+  .lockhero p{font-size:13.5px;color:var(--ink2);line-height:1.5;max-width:680px}
+  .lockcallout{border:1px solid rgba(224,66,49,.45);background:rgba(224,66,49,.06);border-radius:11px;padding:13px 15px;margin:14px 0}
+  .lockcallout .lc-h{font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.05em;color:#c0392b;margin-bottom:6px;display:flex;align-items:center;gap:7px}
+  body.dark .lockcallout .lc-h{color:#ff8a7a}
+  .lockcallout ul{margin:0;padding-left:18px}
+  .lockcallout li{font-size:13.5px;color:var(--ink);line-height:1.55;margin:3px 0}
+  .lockcallout b{color:var(--ink)}
   .otherbar{margin-top:22px;padding-top:18px;border-top:1px dashed var(--line2)}
   .otherbar-h{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:11px}
   .otherbtns{display:flex;flex-wrap:wrap;gap:12px}
@@ -257,6 +278,8 @@
   .modebadge{border-radius:10px;padding:10px 13px;font-size:12.5px;font-weight:700;margin-bottom:14px;line-height:1.4}
   .mb-unknown{background:var(--asoft);color:var(--a);border:1px solid var(--a)}
   .mb-older{background:var(--brandsoft);color:var(--brand2);border:1px solid var(--brand)}
+  .mb-lock{background:rgba(224,66,49,.08);color:#c0392b;border:1px solid rgba(224,66,49,.5)}
+  body.dark .mb-lock{color:#ff8a7a}
   .fld{margin-bottom:14px}
   .fld label{display:block;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:5px}
   .fld input,.fld textarea,.fld select{width:100%;border:1px solid var(--line2);border-radius:9px;padding:10px 12px;font-size:14px;font-family:var(--sans);outline:none;color:var(--ink)}
@@ -404,6 +427,17 @@
   <div class="maintabs" id="maintabs">
     <button class="mt on" data-tab="product" onclick="setMainTab('product')"><span class="ic-inl" style="width:15px;height:15px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10.5" width="16" height="11" rx="2.2"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/></svg></span>Product Issues</button>
     <button class="mt" data-tab="nonproduct" onclick="setMainTab('nonproduct')"><span class="ic-inl" style="width:15px;height:15px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8v8l9 5 9-5V8Z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg></span>Non-Product Issues</button>
+    <button class="mt mt-lock" data-tab="lockout" onclick="setMainTab('lockout')"><span class="lockdot"></span><span class="ic-inl" style="width:15px;height:15px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10.5" width="16" height="11" rx="2.2"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/><path d="M12 15v2"/></svg></span>Lockout</button>
+  </div>
+
+  <!-- ============ LOCKOUT (CRITICAL) TAB ============ -->
+  <div id="lockout" class="page">
+    <div class="lockhero">
+      <div class="lh-ic"><span class="ic-inl nomargin" style="width:22px;height:22px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.3 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.3a2 2 0 0 0-3.4 0Z"/><path d="M12 9v5M12 17h.01"/></svg></span></div>
+      <div><div class="lh-h">Customer locked out — critical</div>
+        <p>The customer cannot get into their home. Treat every lockout as top priority: work the SOP fast, get the door open, and if it cannot be resolved on call, escalate immediately with a mandatory call to the leads below.</p></div>
+    </div>
+    <div id="lockout-body"></div>
   </div>
 
   <div id="home" class="page on">
@@ -753,7 +787,7 @@ let ISSUES=[
   {sku:"ultra",id:"u-rf",sev:"a",freq:6,title:"No notification from the doorbell (RF)",say:"Not getting notifications from the doorbell / RF module",
    steps:[
      {q:"Check that the RF bell notification is visible on the app on a completely open door.",br:[
-       {yn:"yes",act:"Distance or range issue. Raise on Slack with POW mentioning the RF module works on an open door; assign a revisit to re-fit the RF module close to the lock.",cust:"The doorbell unit is placed a little too far from the lock. A technician will reposition it closer, and it will work reliably."},
+       {yn:"yes",act:"Distance or range issue. Raise on Slack with POW mentioning the RF module works on an open door; suggest the customer arrange an electrician visit to re-fit the RF module close to the lock.",cust:"The doorbell unit is placed a little too far from the lock. Please have an electrician reposition it closer to the lock, and it will work reliably."},
        {yn:"no",act:"Guide the customer to unpair the RF module from the app and check if it pairs again from the app.",cust:"Let me guide you through re-pairing the doorbell unit; this often restores the notifications."}]},
      {q:"Did the RF module pair after unpairing?",br:[
        {yn:"no",act:"Immediately raise on Slack to align a replacement of the RF module.",cust:"The doorbell unit needs replacing. We will send a new one and set it up for you."},
@@ -860,26 +894,69 @@ let ISSUES=[
 
   {sku:"pro",id:"p-notif",sev:"a",freq:24,title:"Too many notifications",say:"The customer is getting multiple and frequent notifications (RF / lock bell)",
    steps:[
+     {q:"First, check if the RF (doorbell) module is installed at the customer's place.",br:[
+       {yn:"yes",act:"RF is installed. The extra notifications can come from the RF/doorbell side, so check the door-bell branch below as well. Follow the next steps.",cust:"Let me check your doorbell unit and the lock together to find what is sending the extra alerts."},
+       {yn:"no",act:"No RF installed, so the notifications are coming from the lock bell only. Focus on the lock-bell steps below.",cust:"Since there is no doorbell unit, the extra alerts are from the lock itself. Let me check that."}]},
+     {q:"Do this: open App settings - Diagnosis and run the diagnostic flow to see which source (RF / lock bell) is firing the notifications.",br:[
+       {yn:"do",act:"Note the diagnostic result — it tells you whether the lock bell or the RF/door bell is the source. Use it to pick the correct branch below.",cust:"I am running a quick diagnostic in the app to pinpoint what is triggering the notifications."}]},
      {q:"Is the issue specific to the lock bell? (Check app history.)",br:[
        {yn:"yes",act:"Create a revisit for lock firmware flashing.",cust:"A technician will apply a quick update on a visit, and the notifications will return to normal."}]},
      {q:"Is the issue persistent / still exists after flashing?",br:[
        {yn:"yes",act:"Immediately raise on Slack for a lock replacement. This happens due to the glass on the front panel causing excess sensitivity, creating false lock-bell notifications.",cust:"To fully resolve this, we will arrange a replacement and a technician visit so the notifications work correctly."}]},
      {q:"Is the issue specific to the door bell?",br:[
        {yn:"yes",act:"Create an electrician revisit to check the door bell for short circuits. A minor short circuit or current leak can trigger the RF bell module while the customer's bell does not ring.",cust:"We will arrange an electrician to check the doorbell wiring, which is causing the extra notifications, and set it right."}]}],
-   pow:["Screenshots of the notifications and app history","The Lock Pro number"]},
+   pow:["Screenshots of the notifications and app history","The diagnostic result (RF / lock bell)","The Lock Pro number"]},
 
   {sku:"pro",id:"p-rf",sev:"a",freq:22,title:"No doorbell notification (RF)",say:"The customer is not getting notifications from the doorbell",
    steps:[
      {q:"Are notifications received from the lock bell?",br:[
        {yn:"no",act:"The issue is due to weak Wi-Fi / pairing. Follow the steps for the Wi-Fi issue.",cust:"The notifications depend on the Wi-Fi connection. Let us strengthen the Wi-Fi so they come through reliably."},
        {yn:"yes",act:'Check in App settings - Diagnosis if the RF status shows a "Green Tick".',cust:"Let me check the doorbell unit's status in the app with you."}]},
+     {q:"Is the Wi-Fi weak or is the router far from the lock? (A range/signal issue can also break RF notifications, not just a faulty module.)",br:[
+       {yn:"yes",act:"Range / Wi-Fi issue. Reconfigure the Wi-Fi to 2.4GHz and bring the router closer to the lock (or add an extender), then recheck the doorbell notifications. Only if notifications still fail on strong, nearby 2.4GHz Wi-Fi, treat it as an RF module issue and follow the next steps.",cust:"The notifications weaken when the Wi-Fi signal is low at the door. Let us connect to a stable 2.4GHz network and keep the router closer to the lock, which usually restores them."},
+       {yn:"no",act:"Wi-Fi and range are fine, so this is not a signal issue. Follow the next steps to check the RF module.",cust:"Your Wi-Fi looks fine, so let me check the doorbell unit itself."}]},
      {q:"Is the RF status in the app red?",br:[
        {yn:"yes",act:"Unpair the RF module (with help from Manuranjan) and pair again. If solved, good; if not, follow the next steps.",cust:"Let us re-pair the doorbell unit; this usually restores the notifications."}]},
      {q:"Is the RF status red and pairing also not happening?",br:[
        {yn:"yes",act:"Immediately raise on Slack for an RF module replacement.",cust:"The doorbell unit needs replacing. We will send a new one and set it up for you."}]},
      {q:"Is the RF status in the app green?",br:[
        {yn:"yes",act:"The RF is paired and working, but the notification flow is breaking. Add another member (another mobile device) and check if they also receive the notification. Immediately raise on Slack with POW for the engineering team to verify.",cust:"The doorbell unit is working. We are checking the notification delivery so it reaches your phone every time, and our team is on it."}]}],
-   pow:["A video of the missed notification","The Lock Pro number"]},
+   pow:["A video of the missed notification","The Wi-Fi signal strength / speed near the lock","The Lock Pro number"]},
+
+  {sku:"pro",id:"p-wifi",sev:"g",freq:14,title:"Wi-Fi not connecting",say:"The lock will not connect to Wi-Fi during setup, or keeps failing to pair",
+   steps:[
+     {q:"Key things to check first: on a hotspot, credentials correct, RSSI & speed, device admin/other, router info, and remove the battery for 2 minutes and recheck. At which stage is it failing — BLE stage (credentials not yet entered) or Wi-Fi stage (credentials entered)?",br:[
+       {yn:"do",act:"Note the stage. If it fails BEFORE entering credentials, follow the BLE-stage steps. If it fails AFTER entering credentials, jump to the Wi-Fi-stage steps below. Also run the hardware check if BLE never appears.",cust:"Let me find exactly where the setup is stopping so we fix the right thing. Please stay on the app with me."}]},
+     {q:"BLE STAGE: Is the lock's Bluetooth (BLE) visible on the phone during setup? (Try on at least 2 phones.)",br:[
+       {yn:"no",act:"BLE not visible on at least 2 phones: do a hard reset, remove the batteries, and try again. If resolved, close. If NOT resolved, raise on Slack for a replacement.",cust:"Let us reset the lock and remove the batteries for a moment, then try again. If it still will not show up, we will arrange a replacement for you."},
+       {yn:"yes",act:"BLE is visible. Confirm you are on the ADMIN device. On a non-admin device, try on the admin device first and follow the admin flow. On the admin device, check the BLE RSSI. Follow the next step.",cust:"Good, the lock is visible. Let us continue on the main (admin) phone that set up the lock."}]},
+     {q:"BLE STAGE (admin device): What is the BLE RSSI value?",br:[
+       {yn:"yes",act:"RSSI < 70 (good): hard reset, remove batteries, and try again. If resolved, close. If not resolved, raise on Slack and ask for 2 days.",cust:"The signal is fine. Let us do a quick reset and retry; if it still does not connect, our team will work on it and we will keep you updated."},
+       {yn:"no",act:"RSSI > 70 (weak): raise on Slack and ask for 2 days.",cust:"The Bluetooth signal is weak at the lock. Our team will work on this; we will keep you posted over the next couple of days."}]},
+     {q:"HARDWARE CHECK (if BLE never appears): check on a hotspot, check the main connector, and open the back plate to check the Wi-Fi antenna. Is it resolved after these checks?",br:[
+       {yn:"no",act:"Not resolved after the hardware checks: raise on Slack and ask for 2 days.",cust:"We have run the hardware checks and need our team to look deeper. We will keep you updated over the next couple of days."}]},
+     {q:"WI-FI STAGE: Were the Wi-Fi credentials entered correctly (correct network name and password)?",br:[
+       {yn:"no",act:"Incorrect credentials: enter the correct details and follow the correct-credentials flow (recheck RSSI and speed as below).",cust:"Let us re-enter your Wi-Fi name and password carefully — a small typo is the most common cause here."},
+       {yn:"yes",act:"Correct credentials: check the RSSI and the speed. Follow the next step.",cust:"The details look right. Let me check the Wi-Fi signal and speed at the lock."}]},
+     {q:"WI-FI STAGE: What do the RSSI and speed show?",br:[
+       {yn:"yes",act:"RSSI < 70 AND speed > 5 Mbps (good network): check whether it fails on iOS, Android, or both. In all cases, raise on Slack and ask for 2 days.",cust:"Your network looks fine, so our team will investigate the pairing itself. We will keep you updated over the next couple of days."},
+       {yn:"no",act:"RSSI > 70 OR speed < 5 Mbps (weak/slow network): recommend a Wi-Fi extender near the lock, then retry the setup.",cust:"The Wi-Fi is weak or slow at the door. A Wi-Fi extender placed near the lock will let it connect and stay online."}]}],
+   pow:["A screenshot of the Wi-Fi network showing RSSI and speed","Whether it was tested on a hotspot and on 2 phones","The Lock Pro number"]},
+
+  {sku:"pro",id:"p-rfmulti",sev:"a",freq:10,title:"RF multi pairing (neighbour's notifications)",say:"The customer is getting the doorbell/RF notifications of a neighbour (rare)",
+   steps:[
+     {q:"Confirm the symptom: the customer receives notifications meant for a neighbour. This happens when one RF is paired with multiple locks (paired with the neighbour's lock too). Resolve over a video call.",br:[
+       {yn:"do",act:"Get on a video call with the customer to run the re-pairing live. Follow the steps below in order.",cust:"Let us hop on a quick video call so I can guide you through re-pairing the doorbell unit to only your lock."}]},
+     {q:"Step 1: Unpair the lock from the RF (for the customer facing the problem). Raise it to Vinayak, and take help from Manuranjan to collect the customer's UDID.",br:[
+       {yn:"do",act:"Raise the unpair request to Vinayak; get help from Manuranjan to collect the customer's UDID. Proceed once unpairing is done.",cust:"I am getting our team to unlink the doorbell unit first. This takes a moment."}]},
+     {q:"Step 2: At the time of unpairing, make sure the lock is in wake-up mode.",br:[
+       {yn:"do",act:"Ensure the lock is awake (wake it up) before/at the moment of unpairing.",cust:"Please wake the lock up so it is ready — just touch it or open the app."}]},
+     {q:"Step 3: Pair the lock with the customer's own RF. After unpairing, just press the doorbell button — the RF pairs automatically with the lock. Make sure the lock is connected to Wi-Fi.",br:[
+       {yn:"do",act:"Confirm the lock is on Wi-Fi, then have the customer press the doorbell button so the RF auto-pairs to their lock.",cust:"Now please press the doorbell button. It will automatically connect to your lock — just make sure the lock is on Wi-Fi."}]},
+     {q:"Step 4: Check if the notifications are now coming correctly from the door bell (and no longer from the neighbour's).",br:[
+       {yn:"yes",act:"Resolved. The RF is now paired only to the customer's lock. Confirm no neighbour notifications appear and close the case.",cust:"It is fixed — the doorbell is now linked only to your lock, so you will only get your own notifications."},
+       {yn:"no",act:"Still receiving the neighbour's notifications after re-pairing: raise on Slack with POW and loop in Manuranjan / Vinayak to re-check the pairing and UDID.",cust:"We will get our team to re-check the pairing so this stops completely. Thank you for your patience."}]}],
+   pow:["The customer's UDID (collected with Manuranjan's help)","A note that it was raised to Vinayak for unpairing","A video / screenshot of the neighbour's notification","The Lock Pro number"]},
 
   {sku:"pro",id:"p-setup",sev:"a",freq:12,title:"Lock jumps into settings mode",say:"After unlocking, the lock keeps going into settings mode",
    steps:[
@@ -938,6 +1015,28 @@ let ISSUES=[
 
 const SEV={g:["sev-g","dg","var(--g)","Usually solved on call"],a:["sev-a","da","var(--a)","Sometimes solved on call"],r:["sev-r","dr","var(--r)","Follow all the steps"]};
 const SKULBL={ultra:["skutag-ultra","Ultra"],pro:["skutag-pro","Pro"]};
+
+/* ===================== LOCKOUT (CRITICAL) =====================
+   A single critical SOP for a customer locked out of their home. Applies to both
+   SKUs. Escalation routes to the product desk (ROUTE.ultra) — the agent can edit
+   POCs in the modal — and a MANDATORY call must loop in Kunal, Yogesh & Manuranjan. */
+const LOCKOUT_ISSUE={sku:"ultra",id:"lockout",sev:"r",freq:0,title:"Customer locked out of their home",say:"I am locked out — the lock will not open and I cannot get inside",
+  steps:[
+    {q:"Check the power status: is the lock powered on (any display / lights / response)?",br:[
+      {yn:"no",act:"No power. Guide the customer to connect a power bank to the emergency power slot on the lock (Type-C / micro-USB on the front panel), then try to unlock.",cust:"Let us give the lock a quick power boost. Please connect a power bank to the small charging slot on the front of the lock, and then we will try to open it together."},
+      {yn:"yes",act:"The lock has power. Attempt to unlock now using every available method (PIN, fingerprint, app, RFID). Follow the next step.",cust:"Good, the lock has power. Let us try opening it now — I will guide you through each method."}]},
+    {q:"After connecting the power bank to the emergency slot, does the lock power up and unlock?",br:[
+      {yn:"yes",act:"Lock opened on power. Advise the customer this was a battery/power drain; replace batteries. Keep the case open until batteries are confirmed replaced.",cust:"You are in. The batteries had drained — please replace them at the earliest so this does not happen again, and keep the power bank handy until then."},
+      {yn:"no",act:"Still not opening even with power. Treat as a critical hardware lockout — go to the escalation step below immediately.",cust:"I am escalating this right away as an urgent case so we get you inside as fast as possible."}]},
+    {q:"With the lock powered, does it unlock by any method?",br:[
+      {yn:"yes",act:"Lock unlocks but check the bolts: are the 3 bolts stuck / not retracting (door still will not open)?",cust:"The lock is responding. Let me just check the bolts so the door actually opens for you."},
+      {yn:"no",act:"Lock has power but will not unlock by any method — critical hardware lockout. Go to the escalation step below immediately.",cust:"I am escalating this urgently so we get you inside as quickly as possible."}]},
+    {q:"CRITICAL: Bolts stuck / door still not opening. Raise on Slack tagging ALL SMEs, then create a revisit ticket and align PX for an early visit.",br:[
+      {yn:"do",act:"1) Raise on Slack immediately, tagging all SMEs (leads below).\n2) Create a revisit ticket for the lockout.\n3) Align PX for an early / priority visit — you (the agent) own following up with PX for the earliest slot.\n4) If an SME does not respond, call the SME, then L2, then L3 POCs in order.\n5) MANDATORY on every critical lockout: loop in Kunal, Yogesh and Manuranjan via a CALL (not just a Slack tag).",cust:"This is now our top priority. Our senior team is being brought in right now, and we are arranging the earliest possible technician visit to get your door open."}]},
+    {q:"Does the customer explicitly ask for alternative accommodation because they cannot get in? (Never offer this proactively.)",br:[
+      {yn:"yes",act:"Reimbursement of up to Rs.5000 per day for alternative accommodation is allowed ONLY when the customer explicitly requests it. A valid hotel invoice is mandatory as proof for the reimbursement. Do not pitch or mention this unless the customer raises it first.",cust:"I understand this is very difficult. If you need to arrange a place to stay tonight, we can support that — please keep the hotel invoice, and share it with us for the reimbursement."},
+      {yn:"no",act:"Do NOT mention or offer accommodation reimbursement. Continue with the escalation and getting the door open.",cust:"We are focused on getting your door open as fast as possible."}]}],
+  pow:["A video of the lock and the failed unlock attempt (all methods tried)","Power status and whether the power bank was tried on the emergency slot","The Lock number and Order ID","If accommodation was requested: the customer's request note (invoice to follow)"]};
 
 /* ===================== NON-PRODUCT ISSUES =====================
    Escalations that are not a lock hardware/software fault. Raised on
@@ -1132,6 +1231,45 @@ function buildDetails(){
       +'</div></div>';
   }).join('');
 }
+function buildLockout(){
+  const i=LOCKOUT_ISSUE;
+  const rt=ROUTE.ultra; // product desk; agent can edit POCs in the modal
+  let n=0;
+  const steps=i.steps.map((st,si)=>{
+    n++;
+    const brs=st.br.map((b,bi)=>{
+      const yl=ynLabel(b.yn);
+      const cust=b.cust?'<div class="cust"><span class="ci">'+ic('cloud',15)+'</span><div class="ct"><b>Tell the customer:</b> '+esc(b.cust)+'</div></div>':'';
+      return '<div class="limb '+yl[2]+'" data-k="'+i.id+'|'+si+'|'+bi+'"><div class="limbcard"><div class="limbtop">'
+        +'<span class="tick '+yl[0]+'" onclick="tapTick(\''+i.id+'\','+si+','+bi+',\''+b.yn+'\')"><span class="tbox nomargin">'+ic('check',10)+'</span>'+yl[1]+'</span>'
+        +'<div class="act">'+esc(b.act)+'</div></div>'+cust+'</div></div>';
+    }).join('');
+    return '<div class="node"><div class="qh"><span class="qn nomargin">'+n+'</span><div class="qtext">'+esc(st.q)+'</div></div><div class="limbs">'+brs+'</div></div>';
+  }).join('')
+    +'<div class="endnode"><span class="qn nomargin">✓</span><div class="etext">Tick what you tested with the customer. Your ticks post as a testing summary in the Slack thread when you raise.</div></div>';
+  const pow=i.pow.map(p=>'<li>'+esc(p)+'</li>').join('');
+  const mandatory='<div class="lockcallout"><div class="lc-h">'+ic('alert',14)+'Mandatory on every critical lockout</div><ul>'
+    +'<li><b>Call (not just tag)</b> Kunal, Yogesh and Manuranjan on every critical lockout case.</li>'
+    +'<li>Tag <b>all SMEs</b> on Slack, then call SME → L2 → L3 POCs in order if there is no response.</li>'
+    +'<li>Agent owns following up with <b>PX for the earliest visit</b>.</li>'
+    +'<li>Accommodation reimbursement (up to <b>Rs.5000/day</b>, valid hotel invoice required) is offered <b>only if the customer explicitly asks</b> — never pitch it.</li>'
+    +'</ul></div>';
+  document.getElementById('lockout-body').innerHTML=
+    '<div class="dwrap">'
+      +'<div class="dhead"><div class="dtags"><span class="sevpill sev-r"><span class="dot dr"></span>Critical · follow every step</span></div>'
+      +'<div class="dtitle">'+esc(i.title)+'</div>'
+      +'<div class="dsay"><span class="cslabel">Customer says</span>“'+esc(i.say)+'”</div></div>'
+      +mandatory
+      +'<div class="cols"><div class="flow">'+steps+'</div></div>'
+      +'<div class="dfoot">'
+        +'<div class="powbox"><div class="powh"><span class="pi">'+ic('clipboard',15)+'</span>Collect this before raising on Slack (POW)</div><ul>'+pow+'</ul><div class="pownote">Do not raise the ticket until you have collected all of the above.</div></div>'
+        +'<button class="raisebtn" onclick="openModal(\'lockout\')">'+ic('send',16)+' Raise on Slack</button>'
+        +'<div class="side"><h4>Ticket goes to</h4><div class="poc">'
+        +rt.prim.map(k=>pocRow(k,'prim')).join('')+rt.sec.map(k=>pocRow(k,'sec')).join('')
+        +'</div></div>'
+      +'</div>'
+    +'</div>';
+}
 function openIssue(id){
   document.getElementById('home').classList.remove('on');
   document.getElementById('nonproduct').classList.remove('on');
@@ -1148,7 +1286,7 @@ function tapTick(issueId,si,bi,yn){
   const cur=SOP_TICKS[issueId][si];
   if(cur && cur.bi===bi){ delete SOP_TICKS[issueId][si]; }      // untick
   else{
-    const issue=ISSUES.find(x=>x.id===issueId)||NP_ISSUES.find(x=>x.id===issueId);
+    const issue=ISSUES.find(x=>x.id===issueId)||NP_ISSUES.find(x=>x.id===issueId)||(issueId==='lockout'?LOCKOUT_ISSUE:null);
     const q=issue?issue.steps[si].q:'';
     SOP_TICKS[issueId][si]={bi,yn,q,ans:yn==='yes'?'YES':yn==='no'?'NO':'DONE'};
   }
@@ -1234,6 +1372,7 @@ function setMainTab(tab){
   document.querySelectorAll('#details .page').forEach(p=>p.classList.remove('on'));
   document.getElementById('home').classList.toggle('on',tab==='product');
   document.getElementById('nonproduct').classList.toggle('on',tab==='nonproduct');
+  document.getElementById('lockout').classList.toggle('on',tab==='lockout');
   document.body.classList.toggle('np-active',tab==='nonproduct');
   window.scrollTo({top:0,behavior:'smooth'});
 }
@@ -1335,8 +1474,8 @@ function renderChips(){
 }
 function openModal(id){
   if(!AGENT){document.getElementById('gate').classList.remove('hide');return;}
-  CUR=ISSUES.find(i=>i.id===id);
-  MODE='product';
+  CUR=(id==='lockout')?LOCKOUT_ISSUE:ISSUES.find(i=>i.id===id);
+  MODE=(id==='lockout')?'lockout':'product';
   openModalCommon(CUR.sku,CUR.title);
 }
 /* Special escalation entry points that reuse the same modal/format but tag differently:
@@ -1379,6 +1518,7 @@ function renderModeBadge(){
   if(!el)return;
   if(MODE==='unknown'){el.style.display='block';el.className='modebadge mb-unknown';el.innerHTML=ic('alert',14)+' <b>Unknown Issue</b> — this escalation will be tagged as an unknown product issue in Slack.';}
   else if(MODE==='oldersku'){el.style.display='block';el.className='modebadge mb-older';el.innerHTML=ic('tag',14)+' <b>Older SKU</b> — enter the SKU (Lock S / L1 / L1 Pro, etc.). Tagged as "Older SKU" in Slack.';}
+  else if(MODE==='lockout'){el.style.display='block';el.className='modebadge mb-lock';el.innerHTML=ic('alert',14)+' <b>CRITICAL — Customer Lockout.</b> After sending, you MUST call Kunal, Yogesh and Manuranjan. Tag all SMEs and align PX for the earliest visit.';}
   else{el.style.display='none';}
 }
 function closeModal(){document.getElementById('modal').classList.remove('on');}
@@ -1510,6 +1650,7 @@ function buildPreview(forSend){
   const lock=document.getElementById('f-lock').value.trim()||'—';
   const tagLine = MODE==='unknown' ? (B('Escalation Type')+'\nUnknown Issue\n\n')
                 : MODE==='oldersku' ? (B('Escalation Type')+'\nOlder SKU\n\n')
+                : MODE==='lockout' ? (B('Escalation Type')+'\n:rotating_light: CRITICAL — Customer Lockout\n\n')
                 : '';
   const txt=
 tagLine+
@@ -1629,7 +1770,7 @@ async function sendRaise(){
       bookingDate:document.getElementById('f-bdate').value,installDate:document.getElementById('f-iend').value,
       customerRequestId:document.getElementById('f-creq').value,sourceOrderId:document.getElementById('f-order').value,
       lockNumber:document.getElementById('f-lock').value,
-      escType:(MODE==='unknown'?'Unknown':MODE==='oldersku'?'Older SKU':'Known'),
+      escType:(MODE==='unknown'?'Unknown':MODE==='oldersku'?'Older SKU':MODE==='lockout'?'Lockout (critical)':'Known'),
       permalink:d1.permalink||''});
     const permalink=d1.permalink||'';
     sok.innerHTML=ic('check',14)+' Raised in Slack.'+(permalink?'<a class="gotoslack" href="'+permalink+'" target="_blank" rel="noopener"><svg class="si" viewBox="0 0 24 24" fill="currentColor"><path d="M6 15a2 2 0 1 1-2-2h2v2zm1 0a2 2 0 0 1 4 0v5a2 2 0 1 1-4 0v-5zM9 6a2 2 0 1 1 2-2v2H9zm0 1a2 2 0 0 1 0 4H4a2 2 0 1 1 0-4h5zm9 2a2 2 0 1 1 2 2h-2V9zm-1 0a2 2 0 0 1-4 0V4a2 2 0 1 1 4 0v5zm-2 9a2 2 0 1 1-2 2v-2h2zm0-1a2 2 0 0 1 0-4h5a2 2 0 1 1 0 4h-5z"/></svg>Open thread in Slack</a>':'');
@@ -1763,10 +1904,13 @@ function npUpdateSend(){
 async function sendNPRaise(){
   const send=document.getElementById('np-send'),sok=document.getElementById('np-sok');
   send.disabled=true;send.textContent='Sending…';sok.style.color='';sok.textContent='';
+  // Delivery-led issues route to #native-locks-delivery; everything else to #epc-stores-escalations.
+  const npTarget=(NP_CUR&&NP_CUR.id==='np-delivery')?'delivery':'epc';
+  const npChannelName=npTarget==='delivery'?'#native-locks-delivery':'#epc-stores-escalations';
   try{
     const text=npBuildPreview(true);
     const r1=await fetch('/api/raise',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({phase:'post',channelTarget:'epc',text,submitterEmail:AGENT?AGENT.email:'',submitterName:AGENT?AGENT.name:''})});
+      body:JSON.stringify({phase:'post',channelTarget:npTarget,text,submitterEmail:AGENT?AGENT.email:'',submitterName:AGENT?AGENT.name:''})});
     const d1=await r1.json();
     if(!d1.ok)throw new Error(d1.error||'Message failed');
     const uploaded=[];
@@ -1782,15 +1926,15 @@ async function sendNPRaise(){
     if(uploaded.length){
       send.textContent='Attaching…';
       const rc=await fetch('/api/raise',{method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({phase:'complete',channelTarget:'epc',thread_ts:d1.ts,files:uploaded})});
+        body:JSON.stringify({phase:'complete',channelTarget:npTarget,thread_ts:d1.ts,files:uploaded})});
       const dc=await rc.json();
       if(!dc.ok)throw new Error('Attach failed: '+(dc.error||'unknown'));
     }
-    // testing summary (ticked steps) as a threaded reply in #epc-stores-escalations
+    // testing summary (ticked steps) as a threaded reply
     const npSummary = NP_CUR ? ticksSummaryText(NP_CUR.id) : '';
     if(npSummary){
       await fetch('/api/raise',{method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({phase:'reply',channelTarget:'epc',thread_ts:d1.ts,text:npSummary})});
+        body:JSON.stringify({phase:'reply',channelTarget:npTarget,thread_ts:d1.ts,text:npSummary})});
     }
     logEscalation({type:'Non-Product',sku:'',city:'',
       bucket:(NP_CUR?NP_CUR.cat:document.getElementById('np-tag').value),desc:document.getElementById('np-desc').value,
@@ -1799,7 +1943,7 @@ async function sendNPRaise(){
       escType:'Non-Product',
       permalink:d1.permalink||''});
     const permalink=d1.permalink||'';
-    sok.innerHTML=ic('check',14)+' Raised in #epc-stores-escalations.'+(permalink?'<a class="gotoslack" href="'+permalink+'" target="_blank" rel="noopener"><svg class="si" viewBox="0 0 24 24" fill="currentColor"><path d="M6 15a2 2 0 1 1-2-2h2v2zm1 0a2 2 0 0 1 4 0v5a2 2 0 1 1-4 0v-5zM9 6a2 2 0 1 1 2-2v2H9zm0 1a2 2 0 0 1 0 4H4a2 2 0 1 1 0-4h5zm9 2a2 2 0 1 1 2 2h-2V9zm-1 0a2 2 0 0 1-4 0V4a2 2 0 1 1 4 0v5zm-2 9a2 2 0 1 1-2 2v-2h2zm0-1a2 2 0 0 1 0-4h5a2 2 0 1 1 0 4h-5z"/></svg>Open thread in Slack</a>':'');
+    sok.innerHTML=ic('check',14)+' Raised in '+npChannelName+'.'+(permalink?'<a class="gotoslack" href="'+permalink+'" target="_blank" rel="noopener"><svg class="si" viewBox="0 0 24 24" fill="currentColor"><path d="M6 15a2 2 0 1 1-2-2h2v2zm1 0a2 2 0 0 1 4 0v5a2 2 0 1 1-4 0v-5zM9 6a2 2 0 1 1 2-2v2H9zm0 1a2 2 0 0 1 0 4H4a2 2 0 1 1 0-4h5zm9 2a2 2 0 1 1 2 2h-2V9zm-1 0a2 2 0 0 1-4 0V4a2 2 0 1 1 4 0v5zm-2 9a2 2 0 1 1-2 2v-2h2zm0-1a2 2 0 0 1 0-4h5a2 2 0 1 1 0 4h-5z"/></svg>Open thread in Slack</a>':'');
     send.innerHTML=SEND_LABEL;
   }catch(err){
     sok.style.color='var(--r)';
@@ -2053,7 +2197,7 @@ function exportSOPsCSV(){
 async function init(){
   if(location.hash.indexOf('export-sop')>=0){ exportSOPsCSV(); }
   await loadSOPsFromSheet();           // replaces ISSUES if the sheet loads; else keeps baked-in
-  buildDetails();buildNPDetails();renderNPGrid();setSku('ultra');
+  buildDetails();buildNPDetails();renderNPGrid();buildLockout();setSku('ultra');
   applyMode(localStorage.getItem('locksMode')==='dark');
   initAuth();
 }
