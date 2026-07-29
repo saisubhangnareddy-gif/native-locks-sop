@@ -297,6 +297,7 @@
   body.dark .mb-lock{color:#ff8a7a}
   .fld{margin-bottom:14px}
   .fld label{display:block;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:5px}
+  .fld-opt{font-weight:600;text-transform:none;letter-spacing:0;color:var(--muted);opacity:.85}
   .fld input,.fld textarea,.fld select{width:100%;border:1px solid var(--line2);border-radius:9px;padding:10px 12px;font-size:14px;font-family:var(--sans);outline:none;color:var(--ink)}
   .fld input:focus,.fld textarea:focus{border-color:var(--accent)}
   .fld input[readonly]{background:var(--panel2);color:var(--ink2)}
@@ -499,6 +500,13 @@
       <p>For issues that are not a lock hardware/software fault, pick the category, follow the SOP, then raise on <b>Slack</b> with the required details. Delivery-led issues route to <b>#native-locks-delivery</b>; all others go to <b>#epc-stores-escalations</b>.</p>
     </div>
     <div class="grid" id="np-grid"></div>
+
+    <div class="otherbar">
+      <div class="otherbar-h">Issue not matching any bucket above?</div>
+      <div class="otherbtns">
+        <button class="otherbtn ob-unknown" onclick="openNPSpecial()"><span class="ic-inl" style="width:15px;height:15px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.3 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.3a2 2 0 0 0-3.4 0Z"/><path d="M12 9v5M12 17h.01"/></svg></span>Raise an issue that doesn’t fit any bucket</button>
+      </div>
+    </div>
   </div>
 
   <!-- ============ MY ESCALATIONS DASHBOARD ============ -->
@@ -564,6 +572,7 @@
 
       <div class="fld diag-hide"><label>Primary PoC</label><div class="chips" id="f-prim"></div></div>
       <div class="fld diag-hide"><label>Secondary PoC</label><div class="chips" id="f-sec"></div></div>
+      <div class="fld diag-hide"><label>SMEs <span class="fld-opt">(optional — tag when their expertise is needed; auto-selected for Lockout)</span></label><div class="chips" id="f-sme"></div></div>
 
       <div class="fld diag-hide"><label>Proofs (images / videos)</label>
         <div class="droparea" id="f-drop" onclick="document.getElementById('f-files').click()">
@@ -673,7 +682,8 @@ const POCS={
   sita:{n:"Sita Ram",r:"Senior tech / RCA",in:"SR",c:"#3aa06a",id:"U086EKJDRD2",av:"https://ca.slack-edge.com/T034MTGTM-U086EKJDRD2-6dde6ab132db-72"},
   kunal:{n:"Kunal",r:"POD head",in:"K",c:"#c08a3e",id:"U09P8HVFHKK",av:"https://ca.slack-edge.com/T034MTGTM-U09P8HVFHKK-8dfca5ae7da3-72"},
   subhang:{n:"Subhang Reddy",r:"Product",in:"SR",c:"#e0679c",id:"U0B94EZ4L3X",av:"https://ca.slack-edge.com/T034MTGTM-U0B94EZ4L3X-g54bb5efa40b-72"},
-  titas:{n:"Titas Dewan",r:"POD backup",in:"TD",c:"#5c9ad1",id:"U08RZ4X1PFC",av:"https://ca.slack-edge.com/T034MTGTM-U08RZ4X1PFC-411a00d0fa7b-72"}
+  titas:{n:"Titas Dewan",r:"POD backup",in:"TD",c:"#5c9ad1",id:"U08RZ4X1PFC",av:"https://ca.slack-edge.com/T034MTGTM-U08RZ4X1PFC-411a00d0fa7b-72"},
+  charanjeet:{n:"Charanjeet",r:"Lockout POC",in:"CJ",c:"#6b8cff",id:"U02RP2WL5KL"}
 };
 const ROUTE={ultra:{prim:["manu","harsha"],sec:["kunal","sita","subhang","titas"]},pro:{prim:["manu","jyothi"],sec:["kunal","sita","subhang","titas"]}};
 
@@ -683,20 +693,34 @@ const NP_POCS_EXTRA={
   sindhu:{n:"Sindhu",r:"VSAT / installation lead",in:"S",c:"#e0679c",id:"U092LUA0P6U",av:"https://ca.slack-edge.com/T034MTGTM-U092LUA0P6U-g51a214ff2e0-72"},
   sudaksha:{n:"Sudaksha Khungar",r:"EPC ops",in:"SK",c:"#4bb8cf",id:"U0BE7UXN86B",av:"https://ca.slack-edge.com/T034MTGTM-U0BE7UXN86B-309bc4b870bb-72"},
   aditya:{n:"Aditya Agrawal",r:"PX / installation",in:"AA",c:"#6b8cff",id:"U08V019A4RX",av:"https://ca.slack-edge.com/T034MTGTM-U08V019A4RX-e1abb33b121e-72"},
-  arpit:{n:"Arpit Singh",r:"Team lead (IE)",in:"AS",c:"#c08a3e",id:"U02ADG9GX5E",av:"https://ca.slack-edge.com/T034MTGTM-U02ADG9GX5E-23f365518ed7-72"}
+  arpit:{n:"Arpit Singh",r:"Team lead (IE)",in:"AS",c:"#c08a3e",id:"U02ADG9GX5E",av:"https://ca.slack-edge.com/T034MTGTM-U02ADG9GX5E-23f365518ed7-72"},
+  sanaulla:{n:"Sanaulla",r:"PX availability (6hr)",in:"SA",c:"#3aa06a",id:"U07Q9C33B0V"},
+  rohit:{n:"Rohit Singh Bisht",r:"Logistics / delivery",in:"RB",c:"#c08a3e",id:"U06T72X8KQS"}
 };
+/* SMEs (subject-matter experts) — optional to tag on any escalation, auto-selected only
+   for Lockout cases. Mentions need each Slack member id. Fill the "id" values below. */
+const SME_POCS={
+  anek:{n:"Anek",r:"SME",in:"AN",c:"#6b8cff",id:"U0A2Q6QUTHR"},
+  manohara:{n:"Manohar",r:"SME",in:"MA",c:"#4bb8cf",id:"U0AG9E0E1AT"},
+  amirul:{n:"Amirul",r:"SME",in:"AM",c:"#a889f0",id:"U065ZKWMXPY"},
+  janmajay:{n:"Janmajay",r:"SME",in:"JA",c:"#3aa06a",id:"U0AKQPQ7V3K"},
+  chandan:{n:"Chandan",r:"SME",in:"CH",c:"#c08a3e",id:"U096NUU5G2W"},
+  vadlaraju:{n:"Vadlaraju",r:"SME",in:"VA",c:"#e0679c",id:"U0AFCSSE2HG"}
+};
+const SME_KEYS=["anek","manohara","amirul","janmajay","chandan","vadlaraju"];
+Object.assign(POCS,SME_POCS);
 Object.assign(POCS,NP_POCS_EXTRA);
 /* Ordered list shown as selectable chips in the non-product modal. */
-const NP_POC_KEYS=["sindhu","sudaksha","aditya","arpit","manu","kunal","jyothi","sita","titas","subhang"];
+const NP_POC_KEYS=["sindhu","sudaksha","aditya","sanaulla","rohit","arpit","manu","kunal","jyothi","sita","titas","subhang"];
 /* Default primary/secondary per bucket id (falls back to the generic default). */
 const NP_ROUTE={
   "np-incompatible":{prim:["manu","sindhu"],sec:["sudaksha","kunal"]},
+  "np-config":{prim:["manu"],sec:["harsha","jyothi"]},
   "np-return":{prim:["manu"],sec:["kunal","sita"]},
-  "np-pxnoshow":{prim:["aditya","sindhu"],sec:["sudaksha","kunal"]},
-  "np-installpending":{prim:["sindhu"],sec:["sudaksha","aditya"]},
+  "np-pxnoshow":{prim:["aditya","sindhu"],sec:["sanaulla","sudaksha","kunal"]},
   "np-customer":{prim:["manu"],sec:["kunal","sita"]},
   "np-payment":{prim:["manu"],sec:["kunal","sita"]},
-  "np-delivery":{prim:["sindhu"],sec:["sudaksha","kunal"]},
+  "np-delivery":{prim:["rohit","sindhu"],sec:["sudaksha","kunal"]},
   "np-dooralign":{prim:["manu","sindhu"],sec:["sita","sudaksha"]},
   "np-doordamage":{prim:["manu","kunal"],sec:["sita","arpit"]},
   "np-critical":{prim:["manu","kunal"],sec:["sita","subhang"]},
@@ -1078,6 +1102,22 @@ let NP_ISSUES=[
        {yn:"no",act:"Raise on Slack to align a pickup / return; tag the POCs.",cust:"Since the door isn't compatible, we'll arrange a pickup and process the return for you."}]}],
    pow:["Photos of the door","PX/trainer's incompatibility reason","Ticket & Customer Request ID"]},
 
+  {id:"np-config",cat:"Configuration Support",sev:"g",title:"Configuration Support",tag:"customer",priority:"P2",
+   say:"Customer needs help configuring the lock: settings (direction/language/auto-lock/motion), adding fingerprint/RFID/PIN, or app/Wi-Fi setup",
+   steps:[
+     {q:"Confirm the SKU (Lock Ultra vs Lock Pro / Lock / L1 / L1 Pro / RIM) and exactly what the customer wants to configure.",br:[
+       {yn:"do",act:"Note the SKU and the config task (settings change, add user/fingerprint/RFID, Wi-Fi/app pairing, RF module). All lock settings need the Master PIN, so keep it handy."}]},
+     {q:"LOCK ULTRA settings — guide the customer live (each ends by pressing Back until the lock sleeps):",br:[
+       {yn:"do",act:"• Direction: 888 → Tick → Master PIN → 11 → 1 (left) / 2 (right).\n• Language: 101 → Tick → Master PIN.\n• Motion sensor: Back+Tick → Master PIN → 4 → 1 → 3 (options 1/2/3/4 = OFF).\n• Auto-lock timing: Back+Tick → Master PIN → Tick → 4 → 12 → pick time (6s = 6+Tick, 9s = 9+Tick).",cust:"Let me walk you through the setting on your lock, step by step — please follow along on the keypad."}]},
+     {q:"LOCK PRO / LOCK / L1 / L1 PRO / RIM settings & users — guide live (all start with the Master PIN):",br:[
+       {yn:"do",act:"• Passage mode (Pro only): Back+Tick, Master PIN, Tick → 411 enable / 412 disable.\n• Intruder alert: Back+Tick, Master PIN, Tick → 421 enable / 422 disable.\n• Language (Pro / Lock): Back+Tick, Master PIN, Tick → 4512 (if it fails and any fingerprint opens it, it's in reset mode — add a Master PIN first; else try 4522).\n• Delete a user (Lock & Pro): Back+Tick, Master PIN, Tick → 32, then punch the fingerprint / enter the PIN to delete.\n• Add fingerprint/RFID/PIN (L1 & L1 Pro): * # Master PIN # → 1, then punch the print/card/PIN (Admin: 2).\n• Add fingerprint/RFID/PIN (RIM): * # Master PIN # → 11 for Admin print (User: 21).",cust:"Let me guide you through this on the lock — please have your Master PIN ready and follow along."}]},
+     {q:"APP / Wi-Fi pairing — is the customer setting up the lock in the app (L1/L1 Pro/RIM via Smart Life, Native SKUs via the UC app)?",br:[
+       {yn:"do",act:"• L1 / L1 Pro (Smart Life): wake lock, * #, Master PIN, # → 461 → in Smart Life: Add Device → Smart Lock → select the 2.4GHz Wi-Fi → enter password → pair.\n• RIM (Smart Life): * # Master PIN # → 132 → Add Device → Smart Lock → 2.4GHz Wi-Fi → password → confirm connectivity.\n• Always use the ADMIN device on a 2.4GHz network (5GHz-only is the top cause of setup failure); use the customer's hotspot to test. Don't uninstall the app — close and reopen after any reset.",cust:"Let's set the lock up in the app on the main phone using a 2.4GHz Wi-Fi (or your hotspot). I'll guide you through each step."}]},
+     {q:"Is the configuration still failing after following the SKU steps on a good 2.4GHz network?",br:[
+       {yn:"yes",act:"Raise on Slack with the SKU, the exact failing step, and a screen recording; tag the POCs to check from the backend.",cust:"Let me get our team to look into this so we get your lock set up properly. I'll keep you posted."},
+       {yn:"no",act:"Configuration done. Confirm the setting/pairing works and the lock is online, then close the case.",cust:"Your lock is set up now. Please try it a few times — reach out anytime if you need help."}]}],
+   pow:["SKU and the exact configuration task/step failing","Screen recording / photos of the setup or keypad error","Wi-Fi network (2.4GHz) and whether tested on hotspot","Ticket & Customer Request ID"]},
+
   {id:"np-return",cat:"Return & Refund",sev:"a",title:"Return & Refund",tag:"customer",priority:"P2",
    say:"Customer wants to return the lock or a refund/return needs to be punched and approved",
    steps:[
@@ -1088,25 +1128,20 @@ let NP_ISSUES=[
        {yn:"no",act:"Continue the relevant SOP before requesting a return."}]}],
    pow:["Return reason","Proof resolution was attempted","Ticket & Customer Request ID"]},
 
-  {id:"np-pxnoshow",cat:"PX No Show",sev:"r",title:"PX No Show",tag:"delivery",priority:"P1",
-   say:"Professional didn't show up, no PX available, or the visit was rescheduled multiple times",
+  {id:"np-pxnoshow",cat:"Partner Led",sev:"r",title:"Partner Led (no-show / no-response / reschedule / install pending)",tag:"delivery",priority:"P1",
+   say:"Professional didn't show up or respond, visit rescheduled repeatedly, or installation is pending after delivery",
    steps:[
-     {q:"Check the job/visit status and how many times it was rescheduled or the PX no-showed.",br:[
-       {yn:"do",act:"Note the last scheduled date, no-show count, and the customer's availability window."}]},
-     {q:"Is a fresh visit still unassigned or the customer highly dissatisfied?",br:[
-       {yn:"yes",act:"Raise on Slack to assign another PX urgently; tag the POCs with the availability window.",cust:"I'm sorry about the missed visit. We're assigning another professional on priority and will confirm the slot."},
-       {yn:"no",act:"Confirm the next visit date to the customer and keep the case open."}]}],
-   pow:["Job/visit status screenshot","No-show count + last scheduled date","Customer availability window"]},
-
-  {id:"np-installpending",cat:"Installation Pending",sev:"a",title:"Installation Pending",tag:"delivery",priority:"P2",
-   say:"Lock delivered but installation is pending/delayed, or the customer is awaiting a PX visit",
-   steps:[
-     {q:"Check whether a job is created and its current status on the dashboard.",br:[
-       {yn:"do",act:"Confirm whether a PX/job is aligned and the expected date."}]},
-     {q:"Is the installation delayed beyond the committed TAT or no job aligned?",br:[
-       {yn:"yes",act:"Raise on Slack to align/expedite the installation; tag the POCs.",cust:"We're aligning your installation on priority and will confirm the visit date shortly."},
-       {yn:"no",act:"Confirm the scheduled date to the customer and keep the case open."}]}],
-   pow:["Job/installation status screenshot","Committed vs current date","Ticket & Customer Request ID"]},
+     {q:"Open the job/visit on the ops portal: is a PX assigned, and is it a No Show, No Response, or install-pending case?",br:[
+       {yn:"do",act:"Note the last scheduled date/slot, the no-show/reschedule count, whether a PX is assigned, and the customer's availability window."}]},
+     {q:"Step 1 — Check with the EXISTING partner: are they willing to go, and in how much time? Can the PX and customer agree on a common time?",br:[
+       {yn:"yes",act:"Reschedule for the SAME partner at the agreed time. Confirm the slot to the customer and keep the case open.",cust:"Your professional will reach you at the agreed time. I've rescheduled the visit and will keep the ticket open until it's done."},
+       {yn:"no",act:"Existing partner can't align. Go to Step 2.",cust:"Let me find you another professional at the earliest — one moment."}]},
+     {q:"Step 2 — Are <24hr slots available for another partner (check the Partner Hubwise sheet)? Call that partner, convince them to visit, and confirm the slot fits the customer.",br:[
+       {yn:"yes",act:"Reschedule to that partner once the customer confirms the slot fits.",cust:"I've arranged another professional for you and confirmed the slot. You're all set."},
+       {yn:"no",act:"No same-day partner. Step 3 — try another day, confirming with both the customer and a partner.",cust:"I couldn't get a same-day slot, so let's pick the earliest day that works for you and I'll confirm a professional."}]},
+     {q:"Step 4 — Is there NO partner available in the hub at all (or the customer is highly dissatisfied / repeat failure)?",br:[
+       {yn:"yes",act:"Raise on Slack to get a PX assigned within 6 hours — loop in Aditya, Sanaulla and Sudaksha. Share the hub, the customer's availability window, and the no-show/reschedule count.",cust:"I'm escalating on priority to get a professional assigned to you within a few hours. Thank you for your patience."}]}],
+   pow:["Job/visit status screenshot from ops","No-show / no-response / reschedule count + last scheduled date","Hub + customer availability window","Ticket & Customer Request ID"]},
 
   {id:"np-customer",cat:"Customer-Led",sev:"a",title:"Customer-Led",tag:"customer",priority:"P2",
    say:"Customer request, dissatisfaction, or demand that needs desk intervention (not covered by another bucket)",
@@ -1119,24 +1154,31 @@ let NP_ISSUES=[
    pow:["Customer VOC (verbatim)","What was already attempted","Ticket & Customer Request ID"]},
 
   {id:"np-payment",cat:"Payment-Led",sev:"a",title:"Payment-Led",tag:"payment",priority:"P2",
-   say:"Refund not processed, double charge, payment stuck, GST/invoice, or a pricing dispute",
+   say:"Payment failed, refund not received, double charge, EMI issue, GST/invoice, or a pricing dispute",
    steps:[
-     {q:"Verify the payment/refund status and the exact amount and date in dispute.",br:[
-       {yn:"do",act:"Capture the payment/refund screenshot and the amount/date."}]},
-     {q:"Is the refund overdue beyond TAT or a genuine payment issue?",br:[
-       {yn:"yes",act:"Raise on Slack with the payment proof for a finance check; tag the POCs.",cust:"I've escalated your payment/refund for a finance check and will update you on the timeline."},
-       {yn:"no",act:"Advise the customer of the expected TAT; raise only if it has passed or the customer insists."}]}],
-   pow:["Payment/refund screenshot","Amount and date in dispute","Ticket & Customer Request ID"]},
+     {q:"Open the customer's product request page on the ops portal and check the Payment dashboard for the payment/refund status, amount, and date. (Tell the customer: “Let me check the payment status, it'll take 2-3 mins.”)",br:[
+       {yn:"do",act:"On the ops product request page / Payment dashboard, confirm the state: payment failed but captured at UC, failed and NOT captured, refund initiated, or refund done. Capture the screenshot with amount + date. No call to CX/PX needed for most cases."}]},
+     {q:"Is this an EMI case (customer wants EMI, EMI not reflecting, or an EMI-related dispute)?",br:[
+       {yn:"yes",act:"Raise on Slack and tag Kunal for the EMI case. Include the amount, the EMI plan/tenure the customer expects, and the payment screenshot.",cust:"Let me get this checked with the right team for your EMI. I'll update you shortly."}]},
+     {q:"Which payment-failure scenario is it?",br:[
+       {yn:"do",act:"• Failed but CAPTURED at UC: booking unsuccessful due to a server issue — refund initiated, credited in 5-7 bank working days (RBI norm). Give the expected date.\n• Failed and NOT captured: any deduction is auto-credited in 5-7 bank working days to the source (UPI/Paytm/GPay). Ask the customer to re-book using \"Pay After Service\".\n• TAT over but refund not received: refund was processed on [date] — share the RRN number and ask the customer to validate with their bank (may be stuck at gateway).\n• Refund within TAT, customer says not received: share the RRN, ask them to check with the bank; wait out the 5-7 day window.",cust:"Here's exactly what's happening with your payment and when to expect it. If a refund is due, it lands in 5-7 bank working days per RBI norms, and I can share the reference number to track with your bank."}]},
+     {q:"Is the refund genuinely overdue beyond the 5-7 day window, a double charge, or unresolved after sharing the RRN?",br:[
+       {yn:"yes",act:"Raise on Slack with the payment screenshot and RRN for a finance check; tag the POCs.",cust:"I've escalated your payment/refund for a finance check and will update you on the timeline."},
+       {yn:"no",act:"Share the expected date/RRN and close; raise only if the customer insists or the window has passed."}]}],
+   pow:["Payment/refund screenshot from the ops product request page / Payment dashboard","Amount, date, and RRN (and EMI plan if applicable)","Ticket & Customer Request ID"]},
 
   {id:"np-delivery",cat:"Delivery-Led",sev:"a",title:"Delivery-Led",tag:"delivery",priority:"P2",
-   say:"Delivery delay, wrong/missing item, damaged-in-transit, or pickup / reverse-logistics stuck",
+   say:"Delivery delay/status, wrong product delivered, missing/broken spare part, or pickup / reverse-logistics stuck",
    steps:[
-     {q:"Check the delivery/pickup status and the AWB/tracking on the order.",br:[
-       {yn:"do",act:"Capture the status screenshot and note the tracking ID; for wrong/missing/damaged item, collect photos."}]},
-     {q:"Is the delivery/pickup delayed, failing, or the item wrong/damaged?",br:[
-       {yn:"yes",act:"Raise on Slack to re-align delivery/pickup (Blue Dart / porter) or a replacement; tag the POCs.",cust:"We're re-aligning the logistics on priority and will share the updated tracking with you."},
-       {yn:"no",act:"Confirm the delivery/pickup date to the customer and keep the case open."}]}],
-   pow:["Delivery/pickup status screenshot","AWB / tracking ID (or item photos)","Ticket & Customer Request ID"]},
+     {q:"Open the product order page on the ops portal and check the delivery/pickup status, AWB/tracking, and the SLA. Ask the customer to allow 15-30 mins (you may need the logistics POCs).",br:[
+       {yn:"do",act:"From the ops product order page, capture the delivery/pickup status and note the AWB/tracking ID. Cross-check the installation date — a lock not delivered at least the day before (or within 4 hrs of the install slot) means the installation must be rescheduled."}]},
+     {q:"Is a spare part or accessory missing / broken (not the whole lock)?",br:[
+       {yn:"yes",act:"Confirm the part with photos. Order it via the Spare Form (delivery team updates the AWB on the spare sheet); if it's a part not on the form, raise on Slack. If a PX is at/visiting the customer and has the spare, get it changed and initiate the spare payment. Note: a spare-only issue is not eligible for return — pitch replacement if the customer refuses repair.",cust:"I've arranged the correct part for you — we'll share the dispatch/visit details shortly."}]},
+     {q:"Was the WRONG product delivered?",br:[
+       {yn:"yes",act:"If the customer ordered the correct product but the wrong one arrived: punch a replacement. If the customer ordered the wrong lock themselves and now wants a different one: they can order the new lock, and we take the return once the new lock is installed.",cust:"Let me sort the correct lock out for you and arrange the swap."}]},
+     {q:"For a delivery delay / status query — what's the SLA state?",br:[
+       {yn:"do",act:"• SLA NOT breached: inform the customer of the delivery TAT and the installation date, then close — and also post a note on Slack.\n• SLA breached: raise on Slack and tag Rohit Singh Bisht; park the ticket for 24 hrs.\n• No tracking ID available: raise on Slack and tag Rohit Singh Bisht; park for 24 hrs.",cust:"Here's your delivery status and the expected installation date. If it's running behind our timeline, I've escalated it to our logistics team to expedite."}]}],
+   pow:["Delivery/pickup status + SLA screenshot from the ops product order page","AWB / tracking ID (or note if unavailable)","Photos of the wrong/missing/broken item or spare part","Ticket & Customer Request ID"]},
 
   {id:"np-dooralign",cat:"Door Alignment Issue",sev:"a",title:"Door Alignment Issue",tag:"product",priority:"P2",
    say:"Door/frame alignment prevents smooth locking, or alignment work is needed for installation",
@@ -1290,7 +1332,7 @@ function buildLockout(){
         +'<div class="ctarow"><button class="diagbtn2" onclick="openDiagnosed(\'lockout\')">'+ic('check',16)+' Diagnosed &amp; resolved</button>'
         +'<button class="raisebtn" onclick="openModal(\'lockout\')">'+ic('send',16)+' Raise on Slack</button></div>'
         +'<div class="side"><h4>Ticket goes to</h4><div class="poc">'
-        +rt.prim.map(k=>pocRow(k,'prim')).join('')+rt.sec.map(k=>pocRow(k,'sec')).join('')
+        +[...rt.prim,'charanjeet'].map(k=>pocRow(k,'prim')).join('')+rt.sec.map(k=>pocRow(k,'sec')).join('')
         +'</div></div>'
       +'</div>'
     +'</div>';
@@ -1329,6 +1371,12 @@ function paintTicks(issueId){
     limb.classList.toggle('ticked',!!sel);
     const t=limb.querySelector('.tick'); if(t)t.classList.toggle('on',!!sel);
   });
+}
+/* Clear a SOP's ticks (after a successful raise/diagnose) so the next case starts fresh. */
+function clearTicks(issueId){
+  if(!issueId)return;
+  delete SOP_TICKS[issueId];
+  paintTicks(issueId);
 }
 /* Build the plain-text testing summary for Slack (bold answers via *asterisks*). */
 function ticksSummaryText(issueId){
@@ -1456,6 +1504,7 @@ let DIAG=false;    // true when the modal is in "Diagnosed & resolved" mode (no 
 let FETCHED=null;  // fetched ticket details
 let FILES=[];      // attached File objects
 let PRIM=[],SEC=[];// selected POC keys
+let SME=[];        // selected SME keys (optional; auto-selected for Lockout)
 
 function cap(s){return s? s.charAt(0).toUpperCase()+s.slice(1):s;}
 const MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
@@ -1486,7 +1535,8 @@ function nowStamp(){
 }
 function renderChips(){
   const rt=ROUTE[(CUR&&CUR.sku)?CUR.sku:(activeSku==='pro'?'pro':'ultra')];
-  const all=[...new Set([...rt.prim,...rt.sec,'kunal','sita','subhang','titas','manu','harsha','jyothi'])];
+  // Include any currently-selected POCs (e.g. Charanjeet on lockouts) so their chip always shows.
+  const all=[...new Set([...rt.prim,...rt.sec,'kunal','sita','subhang','titas','manu','harsha','jyothi',...PRIM,...SEC])];
   function draw(el,selected,otherSel){
     document.getElementById(el).innerHTML=all.map(k=>{
       const on=selected.includes(k);
@@ -1499,6 +1549,17 @@ function renderChips(){
       const idx=arr.indexOf(k); if(idx>=0)arr.splice(idx,1); else arr.push(k);
       renderChips();buildPreview();};
   });
+  // SME chips (own roster; multi-select, optional)
+  const smeEl=document.getElementById('f-sme');
+  if(smeEl){
+    smeEl.innerHTML=SME_KEYS.map(k=>{
+      const on=SME.includes(k);
+      return '<span class="chip'+(on?' on':'')+'" data-k="'+k+'">'+esc(POCS[k].n)+(on?' <span class="cx">×</span>':'')+'</span>';
+    }).join('');
+    smeEl.querySelectorAll('.chip').forEach(c=>{
+      c.onclick=()=>{const k=c.dataset.k;const idx=SME.indexOf(k);if(idx>=0)SME.splice(idx,1);else SME.push(k);renderChips();buildPreview();};
+    });
+  }
 }
 function openModal(id){
   if(!AGENT){document.getElementById('gate').classList.remove('hide');return;}
@@ -1530,6 +1591,8 @@ function openSpecial(mode){
 function openModalCommon(routeSku,bucketVal,titleOverride){
   FETCHED=null;FILES=[];
   PRIM=[...ROUTE[routeSku].prim];SEC=[...ROUTE[routeSku].sec];
+  if(MODE==='lockout'&&!PRIM.includes('charanjeet'))PRIM.push('charanjeet'); // Charanjeet is a primary POC for lockouts
+  SME=(MODE==='lockout')?[...SME_KEYS]:[]; // all SMEs pre-selected for Lockout, none otherwise
   document.getElementById('mtitle').textContent=(DIAG?'Diagnosed & resolved: ':'Raise on Slack: ')+(titleOverride||bucketVal);
   document.getElementById('f-ticket').value='';
   ['f-sku','f-bdate','f-iend','f-city','f-lock','f-creq','f-cust','f-order'].forEach(x=>document.getElementById(x).value='');
@@ -1682,8 +1745,8 @@ function enableManual(){
   msg.innerHTML='Manual entry enabled — fill in every field by hand, attach proofs, then send.';
   buildPreview();updateSendState();
 }
-function pocMentions(keys){return keys.map(k=>'<@'+POCS[k].id+'>').join(' ');}
-function pocPlain(keys){return keys.map(k=>POCS[k].n).join(', ');}
+function pocMentions(keys){return keys.map(k=>(POCS[k]&&POCS[k].id)?('<@'+POCS[k].id+'>'):(POCS[k]?POCS[k].n:k)).join(' ');}
+function pocPlain(keys){return keys.map(k=>POCS[k]?POCS[k].n:k).join(', ');}
 function buildPreview(forSend){
   const poc = forSend ? pocMentions : pocPlain;
   const B = forSend ? (t)=>'*'+t+'*' : (t)=>t; // bold field titles in the sent Slack message
@@ -1709,6 +1772,7 @@ B('Lock Serial Number')+'\n'+lock+'\n\n'+
 B('POD escalation time')+'\n'+(document.getElementById('f-tat').value||'—')+'\n\n'+
 B('Primary PoC')+'\n'+(poc(PRIM)||'—')+'\n\n'+
 B('Secondary PoC')+'\n'+(poc(SEC)||'—')+'\n\n'+
+(SME.length?(B('SMEs')+'\n'+poc(SME)+'\n\n'):'')+
 B('Request submitted by')+' : '+submitterTag(forSend);
   if(!forSend)document.getElementById('f-preview').textContent=txt;
   return txt;
@@ -1838,6 +1902,7 @@ async function sendRaise(){
     const raisedMsg = d1.threaded ? 'Added to the existing thread for this order.' : 'Raised in Slack.';
     sok.innerHTML=ic('check',14)+' '+raisedMsg+(permalink?'<a class="gotoslack" href="'+permalink+'" target="_blank" rel="noopener"><svg class="si" viewBox="0 0 24 24" fill="currentColor"><path d="M6 15a2 2 0 1 1-2-2h2v2zm1 0a2 2 0 0 1 4 0v5a2 2 0 1 1-4 0v-5zM9 6a2 2 0 1 1 2-2v2H9zm0 1a2 2 0 0 1 0 4H4a2 2 0 1 1 0-4h5zm9 2a2 2 0 1 1 2 2h-2V9zm-1 0a2 2 0 0 1-4 0V4a2 2 0 1 1 4 0v5zm-2 9a2 2 0 1 1-2 2v-2h2zm0-1a2 2 0 0 1 0-4h5a2 2 0 1 1 0 4h-5z"/></svg>Open thread in Slack</a>':'');
     send.innerHTML=SEND_LABEL;
+    if(CUR)clearTicks(CUR.id); // reset SOP ticks so the next case starts fresh
   }catch(err){
     sok.style.color='var(--r)';
     sok.innerHTML=ic('alert',14)+' '+esc(err.message==='EXT_MISSING'?'Ticket Fetcher extension needed to upload files. Install/enable it and reload.':err.message);
@@ -1864,6 +1929,7 @@ function logDiagnosed(){
     sok.style.color='';
     sok.innerHTML=ic('check',14)+' Logged as diagnosed & resolved. Nice SOP work.';
     btn.innerHTML=ic('check',16)+' Mark as diagnosed';
+    if(CUR)clearTicks(CUR.id); // reset SOP ticks so the next case starts fresh
     setTimeout(()=>{closeModal();},1400);
   }catch(err){
     sok.style.color='var(--r)';
@@ -1965,6 +2031,14 @@ function openNPModal(id){
   document.getElementById('npmodal').classList.add('on');
 }
 function closeNPModal(){document.getElementById('npmodal').classList.remove('on');}
+/* Escalate a non-product issue that doesn't fit any listed bucket. Opens the NP modal
+   with no preset bucket, routed to the default POCs; agent describes the issue. */
+function openNPSpecial(){
+  openNPModal('__other__'); // no match -> NP_CUR=null, routes via NP_ROUTE._default
+  document.getElementById('np-cat').innerHTML=ic('box',14)+' Other / issue not in any bucket';
+  document.getElementById('np-tag').value='other';
+  npBuildPreview();
+}
 ['np-ticket','np-creq','np-cust','np-tag','np-desc','np-priority'].forEach(id=>{
   document.addEventListener('input',e=>{if(e.target&&e.target.id===id){npBuildPreview();npUpdateSend();}});
 });
@@ -2035,6 +2109,7 @@ async function sendNPRaise(){
     const permalink=d1.permalink||'';
     sok.innerHTML=ic('check',14)+' Raised in '+npChannelName+'.'+(permalink?'<a class="gotoslack" href="'+permalink+'" target="_blank" rel="noopener"><svg class="si" viewBox="0 0 24 24" fill="currentColor"><path d="M6 15a2 2 0 1 1-2-2h2v2zm1 0a2 2 0 0 1 4 0v5a2 2 0 1 1-4 0v-5zM9 6a2 2 0 1 1 2-2v2H9zm0 1a2 2 0 0 1 0 4H4a2 2 0 1 1 0-4h5zm9 2a2 2 0 1 1 2 2h-2V9zm-1 0a2 2 0 0 1-4 0V4a2 2 0 1 1 4 0v5zm-2 9a2 2 0 1 1-2 2v-2h2zm0-1a2 2 0 0 1 0-4h5a2 2 0 1 1 0 4h-5z"/></svg>Open thread in Slack</a>':'');
     send.innerHTML=SEND_LABEL;
+    if(NP_CUR)clearTicks(NP_CUR.id); // reset SOP ticks after a successful NP raise
   }catch(err){
     sok.style.color='var(--r)';
     sok.innerHTML=ic('alert',14)+' '+esc(err.message==='EXT_MISSING'?'Ticket Fetcher extension needed to upload files. Install/enable it and reload.':err.message);
