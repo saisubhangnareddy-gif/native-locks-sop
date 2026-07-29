@@ -89,6 +89,11 @@
   .np-intro .np-h{font-size:18px;font-weight:800;letter-spacing:-.01em;margin-bottom:4px}
   .np-intro p{font-size:13.5px;color:var(--ink2);line-height:1.5;max-width:640px}
   /* dashboard table */
+  .dashtabs{display:inline-flex;gap:4px;background:var(--panel);border:1px solid var(--line2);border-radius:12px;padding:4px;margin-bottom:14px}
+  .dashtabs .dtab{border:0;background:transparent;color:var(--ink2);font-weight:800;font-size:13px;padding:9px 16px;border-radius:9px;transition:.14s;display:inline-flex;align-items:center;gap:7px}
+  .dashtabs .dtab.on{background:var(--accent);color:#fff}
+  .dashtabs .dcount{font-size:11px;font-weight:800;background:rgba(0,0,0,.12);padding:1px 8px;border-radius:9px}
+  .dashtabs .dtab.on .dcount{background:rgba(255,255,255,.25)}
   .dashwrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--panel)}
   table.dash{width:100%;border-collapse:collapse;font-size:13px;min-width:860px}
   table.dash th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:800;padding:12px 14px;border-bottom:1px solid var(--line);background:var(--panel2)}
@@ -225,6 +230,14 @@
   .powbox .pownote{margin-top:12px;padding-top:11px;border-top:1px dashed var(--line2);font-size:12.5px;color:var(--ink2);font-weight:700}
   .raisebtn{display:inline-flex;align-items:center;margin-top:14px;background:var(--accent);color:#fff;border:0;font-size:15px;font-weight:800;padding:13px 22px;border-radius:11px;box-shadow:0 6px 18px rgba(107,140,255,.28);transition:.14s}
   .raisebtn:hover{filter:brightness(.96);transform:translateY(-1px)}
+  /* CTA row: "Diagnosed & resolved" (green outline) beside "Raise on Slack" */
+  .ctarow{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:14px}
+  .ctarow .raisebtn{margin-top:0}
+  .diagbtn2{display:inline-flex;align-items:center;background:transparent;color:var(--g);border:1.5px solid var(--g);font-size:15px;font-weight:800;padding:12px 20px;border-radius:11px;transition:.14s}
+  .diagbtn2:hover{background:var(--g);color:#fff;transform:translateY(-1px)}
+  body.dark .diagbtn2{color:#4fc79a;border-color:#4fc79a}
+  body.dark .diagbtn2:hover{background:#4fc79a;color:#062018}
+  .mfoot .diagbtn{background:var(--g)}
   .side{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:17px 18px;margin-top:14px}
   .side h4{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:12px;font-weight:800}
   .side .poc{display:flex;flex-wrap:wrap;gap:16px}
@@ -490,12 +503,19 @@
   <div id="dashboard" class="page">
     <button class="back" onclick="closeDash()">← Back</button>
     <div class="np-intro">
-      <div class="np-h">My escalations</div>
-      <p id="dash-sub">Escalations you have raised, most recent first.</p>
+      <div class="np-h">My activity</div>
+      <p id="dash-sub">Escalations you have raised and issues you diagnosed & resolved, most recent first.</p>
     </div>
-    <div class="dashwrap"><table class="dash"><thead><tr>
+    <div class="dashtabs" id="dashtabs">
+      <button class="dtab on" data-view="raised" onclick="setDashView('raised')">Raised on Slack <span class="dcount" id="dc-raised"></span></button>
+      <button class="dtab" data-view="diagnosed" onclick="setDashView('diagnosed')">Diagnosed & resolved <span class="dcount" id="dc-diag"></span></button>
+    </div>
+    <div class="dashwrap" id="dashwrap-raised"><table class="dash"><thead><tr>
       <th>When</th><th>Type</th><th>SKU</th><th>City</th><th>Issue bucket</th><th>Description</th><th>Slack</th>
     </tr></thead><tbody id="dash-body"></tbody></table></div>
+    <div class="dashwrap" id="dashwrap-diagnosed" style="display:none"><table class="dash"><thead><tr>
+      <th>When</th><th>SKU</th><th>City</th><th>Issue bucket</th><th>Description</th><th>Order ID</th>
+    </tr></thead><tbody id="dash-body-diag"></tbody></table></div>
   </div>
 
   <div id="details"></div>
@@ -556,6 +576,7 @@
     </div>
     <div class="mfoot">
       <button class="sendbtn" id="f-send" onclick="sendRaise()" disabled><span class="ic-inl" style="width:16px;height:16px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4Z"/></svg></span>Send to Slack</button>
+      <button class="sendbtn diagbtn" id="f-diag-send" onclick="logDiagnosed()" disabled style="display:none"><span class="ic-inl" style="width:16px;height:16px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.1V12a10 10 0 1 1-5.9-9.1"/><path d="M22 4 12 14.01l-3-3"/></svg></span>Mark as diagnosed</button>
       <span class="gatewarn" id="f-gatewarn"></span>
       <span class="sok" id="f-sok"></span>
     </div>
@@ -1223,7 +1244,8 @@ function buildDetails(){
         +'<div class="cols"><div class="flow">'+steps+'</div></div>'
         +'<div class="dfoot">'
           +'<div class="powbox"><div class="powh"><span class="pi">'+ic('clipboard',15)+'</span>Collect this before raising on Slack (POW)</div><ul>'+pow+'</ul><div class="pownote">Do not raise the ticket until you have collected all of the above.</div></div>'
-          +'<button class="raisebtn" onclick="openModal(\''+i.id+'\')">'+ic('send',16)+' Raise on Slack</button>'
+          +'<div class="ctarow"><button class="diagbtn2" onclick="openDiagnosed(\''+i.id+'\')">'+ic('check',16)+' Diagnosed &amp; resolved</button>'
+          +'<button class="raisebtn" onclick="openModal(\''+i.id+'\')">'+ic('send',16)+' Raise on Slack</button></div>'
           +'<div class="side"><h4>Ticket goes to</h4><div class="poc">'
           +rt.prim.map(k=>pocRow(k,'prim')).join('')+rt.sec.map(k=>pocRow(k,'sec')).join('')
           +'</div></div>'
@@ -1263,7 +1285,8 @@ function buildLockout(){
       +'<div class="cols"><div class="flow">'+steps+'</div></div>'
       +'<div class="dfoot">'
         +'<div class="powbox"><div class="powh"><span class="pi">'+ic('clipboard',15)+'</span>Collect this before raising on Slack (POW)</div><ul>'+pow+'</ul><div class="pownote">Do not raise the ticket until you have collected all of the above.</div></div>'
-        +'<button class="raisebtn" onclick="openModal(\'lockout\')">'+ic('send',16)+' Raise on Slack</button>'
+        +'<div class="ctarow"><button class="diagbtn2" onclick="openDiagnosed(\'lockout\')">'+ic('check',16)+' Diagnosed &amp; resolved</button>'
+        +'<button class="raisebtn" onclick="openModal(\'lockout\')">'+ic('send',16)+' Raise on Slack</button></div>'
         +'<div class="side"><h4>Ticket goes to</h4><div class="poc">'
         +rt.prim.map(k=>pocRow(k,'prim')).join('')+rt.sec.map(k=>pocRow(k,'sec')).join('')
         +'</div></div>'
@@ -1295,7 +1318,9 @@ function tapTick(issueId,si,bi,yn){
 /* reflect tick state in the DOM for the currently open issue */
 function paintTicks(issueId){
   const map=SOP_TICKS[issueId]||{};
-  document.querySelectorAll('#page-'+issueId+' .limb').forEach(limb=>{
+  // Lockout renders into #lockout-body; every other issue renders into #page-<id>.
+  const scope=issueId==='lockout'?'#lockout-body':'#page-'+issueId;
+  document.querySelectorAll(scope+' .limb').forEach(limb=>{
     const parts=(limb.getAttribute('data-k')||'').split('|'); // id|si|bi
     if(parts.length<3)return;
     const si=+parts[1], bi=+parts[2], sel=map[si]&&map[si].bi===bi;
@@ -1424,7 +1449,8 @@ function initAuth(){
 
 /* ============ ESCALATION MODAL ============ */
 let CUR=null;      // current issue object
-let MODE='product';// 'product' | 'unknown' | 'oldersku'
+let MODE='product';// 'product' | 'unknown' | 'oldersku' | 'lockout'
+let DIAG=false;    // true when the modal is in "Diagnosed & resolved" mode (no Slack post)
 let FETCHED=null;  // fetched ticket details
 let FILES=[];      // attached File objects
 let PRIM=[],SEC=[];// selected POC keys
@@ -1474,6 +1500,16 @@ function renderChips(){
 }
 function openModal(id){
   if(!AGENT){document.getElementById('gate').classList.remove('hide');return;}
+  DIAG=false;
+  CUR=(id==='lockout')?LOCKOUT_ISSUE:ISSUES.find(i=>i.id===id);
+  MODE=(id==='lockout')?'lockout':'product';
+  openModalCommon(CUR.sku,CUR.title);
+}
+/* Pre-Slack diagnosis: same fetch flow, but logs to the Diagnosed tab (no Slack post).
+   For issues the agent resolved by following the SOP before needing to escalate. */
+function openDiagnosed(id){
+  if(!AGENT){document.getElementById('gate').classList.remove('hide');return;}
+  DIAG=true;
   CUR=(id==='lockout')?LOCKOUT_ISSUE:ISSUES.find(i=>i.id===id);
   MODE=(id==='lockout')?'lockout':'product';
   openModalCommon(CUR.sku,CUR.title);
@@ -1483,7 +1519,7 @@ function openModal(id){
    - 'oldersku' -> older SKUs like Lock S / L1 / L1 Pro (tagged "Older SKU") */
 function openSpecial(mode){
   if(!AGENT){document.getElementById('gate').classList.remove('hide');return;}
-  CUR=null;MODE=mode;
+  DIAG=false;CUR=null;MODE=mode;
   // Route via the currently selected SKU tree (defaults are fine; agent can edit POCs).
   const routeSku=(activeSku==='pro')?'pro':'ultra';
   const title=mode==='unknown'?'Unknown product issue':'Older SKU issue';
@@ -1492,7 +1528,7 @@ function openSpecial(mode){
 function openModalCommon(routeSku,bucketVal,titleOverride){
   FETCHED=null;FILES=[];
   PRIM=[...ROUTE[routeSku].prim];SEC=[...ROUTE[routeSku].sec];
-  document.getElementById('mtitle').textContent='Raise on Slack: '+(titleOverride||bucketVal);
+  document.getElementById('mtitle').textContent=(DIAG?'Diagnosed & resolved: ':'Raise on Slack: ')+(titleOverride||bucketVal);
   document.getElementById('f-ticket').value='';
   ['f-sku','f-bdate','f-iend','f-city','f-lock','f-creq','f-cust','f-order'].forEach(x=>document.getElementById(x).value='');
   // re-lock any fields that a prior manual-entry session unlocked
@@ -1510,6 +1546,9 @@ function openModalCommon(routeSku,bucketVal,titleOverride){
   if(MODE==='oldersku'){skuEl.readOnly=false;skuEl.placeholder='e.g. Lock S / L1 / L1 Pro';}
   else{skuEl.placeholder='';}
   renderModeBadge();
+  // Toggle the modal CTA: "Send to Slack" vs "Mark as diagnosed" (no Slack post).
+  document.getElementById('f-send').style.display=DIAG?'none':'';
+  document.getElementById('f-diag-send').style.display=DIAG?'':'none';
   renderChips();buildPreview();updateSendState();
   document.getElementById('modal').classList.add('on');
 }
@@ -1709,6 +1748,8 @@ function updateSendState(){
   const hasLock=!!lock, hasFetch=!!FETCHED;
   const ok=hasLock&&hasFetch; // proof is now optional (agent can add media in the Slack thread later)
   document.getElementById('f-send').disabled=!ok;
+  const diagBtn=document.getElementById('f-diag-send');
+  if(diagBtn)diagBtn.disabled=!ok;
   const w=document.getElementById('f-gatewarn');
   if(ok){w.textContent='';return;}
   const miss=[];
@@ -1784,8 +1825,10 @@ async function sendRaise(){
       bucket:document.getElementById('f-bucket').value,desc:document.getElementById('f-desc').value,
       bookingDate:document.getElementById('f-bdate').value,installDate:document.getElementById('f-iend').value,
       customerRequestId:document.getElementById('f-creq').value,sourceOrderId:document.getElementById('f-order').value,
+      customerProfileId:document.getElementById('f-cust').value,
       lockNumber:document.getElementById('f-lock').value,
       escType:(MODE==='unknown'?'Unknown':MODE==='oldersku'?'Older SKU':MODE==='lockout'?'Lockout (critical)':'Known'),
+      summary:summary,
       permalink:d1.permalink||''});
     const permalink=d1.permalink||'';
     const raisedMsg = d1.threaded ? 'Added to the existing thread for this order.' : 'Raised in Slack.';
@@ -1798,7 +1841,33 @@ async function sendRaise(){
   }
 }
 
-/* ============ NON-PRODUCT ESCALATION (#epc-stores-escalations) ============ */
+/* Mark an issue as diagnosed & resolved BEFORE raising on Slack. Logs to the
+   'Diagnosed' tab (kind:'diagnosed') so SOP-adherence resolutions are trackable.
+   No Slack message is posted. */
+function logDiagnosed(){
+  const btn=document.getElementById('f-diag-send'),sok=document.getElementById('f-sok');
+  if(!FETCHED){return;}
+  btn.disabled=true;btn.textContent='Saving…';sok.style.color='';sok.textContent='';
+  const summary = CUR ? ticksSummaryText(CUR.id) : '';
+  try{
+    logEscalation({kind:'diagnosed',type:'Product',
+      sku:document.getElementById('f-sku').value,city:document.getElementById('f-city').value,
+      bucket:document.getElementById('f-bucket').value,desc:document.getElementById('f-desc').value,
+      bookingDate:document.getElementById('f-bdate').value,installDate:document.getElementById('f-iend').value,
+      customerRequestId:document.getElementById('f-creq').value,sourceOrderId:document.getElementById('f-order').value,
+      customerProfileId:document.getElementById('f-cust').value,
+      lockNumber:document.getElementById('f-lock').value,
+      summary:summary});
+    sok.style.color='';
+    sok.innerHTML=ic('check',14)+' Logged as diagnosed & resolved. Nice SOP work.';
+    btn.innerHTML=ic('check',16)+' Mark as diagnosed';
+    setTimeout(()=>{closeModal();},1400);
+  }catch(err){
+    sok.style.color='var(--r)';
+    sok.innerHTML=ic('alert',14)+' Could not log right now. Try again.';
+    btn.disabled=false;btn.innerHTML=ic('check',16)+' Mark as diagnosed';
+  }
+}
 let NP_CUR=null, NP_FILES=[], NP_PRIM=[], NP_SEC=[], NP_FETCHED=null, NP_TICKET='';
 function npRenderChips(){
   const all=NP_POC_KEYS.filter(k=>POCS[k]);
@@ -1955,8 +2024,10 @@ async function sendNPRaise(){
     logEscalation({type:'Non-Product',sku:'',city:'',
       bucket:(NP_CUR?NP_CUR.cat:document.getElementById('np-tag').value),desc:document.getElementById('np-desc').value,
       bookingDate:'',installDate:'',
-      customerRequestId:document.getElementById('np-creq').value,sourceOrderId:'',lockNumber:'',
+      customerRequestId:document.getElementById('np-creq').value,sourceOrderId:'',
+      customerProfileId:document.getElementById('np-cust').value,lockNumber:'',
       escType:'Non-Product',
+      summary:npSummary,
       permalink:d1.permalink||''});
     const permalink=d1.permalink||'';
     sok.innerHTML=ic('check',14)+' Raised in '+npChannelName+'.'+(permalink?'<a class="gotoslack" href="'+permalink+'" target="_blank" rel="noopener"><svg class="si" viewBox="0 0 24 24" fill="currentColor"><path d="M6 15a2 2 0 1 1-2-2h2v2zm1 0a2 2 0 0 1 4 0v5a2 2 0 1 1-4 0v-5zM9 6a2 2 0 1 1 2-2v2H9zm0 1a2 2 0 0 1 0 4H4a2 2 0 1 1 0-4h5zm9 2a2 2 0 1 1 2 2h-2V9zm-1 0a2 2 0 0 1-4 0V4a2 2 0 1 1 4 0v5zm-2 9a2 2 0 1 1-2 2v-2h2zm0-1a2 2 0 0 1 0-4h5a2 2 0 1 1 0 4h-5z"/></svg>Open thread in Slack</a>':'');
@@ -2008,19 +2079,48 @@ function dashRow(e){
     +'<td>'+(esc(e.bucket)||'—')+'</td><td class="ddesc">'+(esc(e.desc)||'—')+'</td>'
     +'<td>'+link+'</td></tr>';
 }
+function dashRowDiag(e){
+  const when=e.ts?new Date(e.ts).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit',hour12:true}):'';
+  const order=e.sourceOrderId?('<a class="dlink" href="https://ops.urbanclap.com/inventory/product-order/'+encodeURIComponent(e.sourceOrderId)+'" target="_blank" rel="noopener">'+esc(e.sourceOrderId)+'</a>'):'—';
+  return '<tr><td class="dwhen">'+esc(when)+'</td>'
+    +'<td class="dsku">'+(esc(e.sku)||'—')+'</td><td>'+(esc(e.city)||'—')+'</td>'
+    +'<td>'+(esc(e.bucket)||'—')+'</td><td class="ddesc">'+(esc(e.desc)||'—')+'</td>'
+    +'<td>'+order+'</td></tr>';
+}
+function setDashView(view){
+  document.querySelectorAll('#dashtabs .dtab').forEach(b=>b.classList.toggle('on',b.dataset.view===view));
+  document.getElementById('dashwrap-raised').style.display=view==='raised'?'':'none';
+  document.getElementById('dashwrap-diagnosed').style.display=view==='diagnosed'?'':'none';
+}
 function loadDash(){
   const body=document.getElementById('dash-body');
+  const bodyD=document.getElementById('dash-body-diag');
+  setDashView('raised');
+  document.getElementById('dc-raised').textContent='';document.getElementById('dc-diag').textContent='';
   body.innerHTML='<tr><td colspan="7" class="dashempty">Loading your escalations…</td></tr>';
+  bodyD.innerHTML='<tr><td colspan="6" class="dashempty">Loading…</td></tr>';
   if(!LOG_WEBAPP_URL){
     body.innerHTML='<tr><td colspan="7" class="dashempty">Dashboard logging is not configured yet.</td></tr>';return;
   }
-  const url=LOG_WEBAPP_URL+(LOG_WEBAPP_URL.indexOf('?')===-1?'?':'&')+'email='+encodeURIComponent(AGENT?AGENT.email:'');
-  fetch(url).then(r=>r.json()).then(rows=>{
+  const email=encodeURIComponent(AGENT?AGENT.email:'');
+  const base=LOG_WEBAPP_URL+(LOG_WEBAPP_URL.indexOf('?')===-1?'?':'&');
+  // Raised escalations
+  fetch(base+'email='+email).then(r=>r.json()).then(rows=>{
     if(!Array.isArray(rows)||!rows.length){body.innerHTML='<tr><td colspan="7" class="dashempty">No escalations yet. Ones you raise will appear here.</td></tr>';return;}
     rows.sort((a,b)=>String(b.ts||'').localeCompare(String(a.ts||'')));
     body.innerHTML=rows.map(dashRow).join('');
+    document.getElementById('dc-raised').textContent=rows.length;
   }).catch(()=>{
     body.innerHTML='<tr><td colspan="7" class="dashempty">Could not load escalations right now. Try again shortly.</td></tr>';
+  });
+  // Diagnosed & resolved (pre-Slack)
+  fetch(base+'kind=diagnosed&email='+email).then(r=>r.json()).then(rows=>{
+    if(!Array.isArray(rows)||!rows.length){bodyD.innerHTML='<tr><td colspan="6" class="dashempty">No diagnoses logged yet. Use “Diagnosed & resolved” when you close an issue on call.</td></tr>';return;}
+    rows.sort((a,b)=>String(b.ts||'').localeCompare(String(a.ts||'')));
+    bodyD.innerHTML=rows.map(dashRowDiag).join('');
+    document.getElementById('dc-diag').textContent=rows.length;
+  }).catch(()=>{
+    bodyD.innerHTML='<tr><td colspan="6" class="dashempty">Could not load right now. Try again shortly.</td></tr>';
   });
 }
 
