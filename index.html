@@ -481,7 +481,7 @@
   <div id="nonproduct" class="page">
     <div class="np-intro">
       <div class="np-h">Non-product escalations</div>
-      <p>For issues that are not a lock hardware/software fault, pick the category, follow the SOP, then raise on <b>#epc-stores-escalations</b> with the required details.</p>
+      <p>For issues that are not a lock hardware/software fault, pick the category, follow the SOP, then raise on <b>Slack</b> with the required details. Delivery-led issues route to <b>#native-locks-delivery</b>; all others go to <b>#epc-stores-escalations</b>.</p>
     </div>
     <div class="grid" id="np-grid"></div>
   </div>
@@ -565,7 +565,7 @@
 <!-- ============ NON-PRODUCT ESCALATION MODAL ============ -->
 <div class="modal" id="npmodal">
   <div class="msheet">
-    <div class="mtop"><h3 id="np-mtitle">Raise on #epc-stores-escalations</h3><button class="mclose" onclick="closeNPModal()">×</button></div>
+    <div class="mtop"><h3 id="np-mtitle">Raise on Slack</h3><button class="mclose" onclick="closeNPModal()">×</button></div>
     <div class="mbody">
       <div class="modebadge mb-older" id="np-cat" style="display:block"></div>
       <div class="fld"><label>Ticket ID</label>
@@ -645,7 +645,7 @@ const SEND_LABEL = ic('send',16)+'Send to Slack';
 
 const POCS={
   manu:{n:"Manuranjan",r:"Revisit / replacement",in:"M",c:"#6b8cff",id:"U0B99EPHE5P",av:"https://ca.slack-edge.com/T034MTGTM-U0B99EPHE5P-gc1203c4c59f-72"},
-  harsha:{n:"Harshavardhan",r:"Ultra tech lead",in:"H",c:"#4bb8cf",id:"U0AF4F13F7Y",av:"https://ca.slack-edge.com/T034MTGTM-U0AF4F13F7Y-f33fce69260f-72"},
+  harsha:{n:"Harshavardhan V",r:"Ultra tech lead",in:"H",c:"#4bb8cf",id:"U08CYV7PW6Q"},
   jyothi:{n:"Jyothi Prakash Reddy",r:"Pro tech lead",in:"J",c:"#a889f0",id:"U09MKC8333Q",av:"https://ca.slack-edge.com/T034MTGTM-U09MKC8333Q-ebca2345209b-72"},
   sita:{n:"Sita Ram",r:"Senior tech / RCA",in:"SR",c:"#3aa06a",id:"U086EKJDRD2",av:"https://ca.slack-edge.com/T034MTGTM-U086EKJDRD2-6dde6ab132db-72"},
   kunal:{n:"Kunal",r:"POD head",in:"K",c:"#c08a3e",id:"U09P8HVFHKK",av:"https://ca.slack-edge.com/T034MTGTM-U09P8HVFHKK-8dfca5ae7da3-72"},
@@ -1051,8 +1051,8 @@ let NP_ISSUES=[
      {q:"Confirm the incompatibility reason with the PX/trainer (thickness, double door, design) and capture door photos.",br:[
        {yn:"do",act:"Capture clear photos of the door + the PX/trainer's reason. Explain to the customer why the lock is incompatible."}]},
      {q:"Does the customer still want installation despite the incompatibility?",br:[
-       {yn:"yes",act:"Get written confirmation that the customer accepts any door-damage risk and no alignment warranty. Then raise on #epc-stores-escalations to align a PX; tag the POCs.",cust:"We can attempt installation only if you're comfortable with possible door modification and no warranty on alignment. Please confirm and we'll arrange a technician."},
-       {yn:"no",act:"Raise on #epc-stores-escalations to align a pickup / return; tag the POCs.",cust:"Since the door isn't compatible, we'll arrange a pickup and process the return for you."}]}],
+       {yn:"yes",act:"Get written confirmation that the customer accepts any door-damage risk and no alignment warranty. Then raise on Slack to align a PX; tag the POCs.",cust:"We can attempt installation only if you're comfortable with possible door modification and no warranty on alignment. Please confirm and we'll arrange a technician."},
+       {yn:"no",act:"Raise on Slack to align a pickup / return; tag the POCs.",cust:"Since the door isn't compatible, we'll arrange a pickup and process the return for you."}]}],
    pow:["Photos of the door","PX/trainer's incompatibility reason","Ticket & Customer Request ID"]},
 
   {id:"np-return",cat:"Return & Refund",sev:"a",title:"Return & Refund",tag:"customer",priority:"P2",
@@ -1061,7 +1061,7 @@ let NP_ISSUES=[
      {q:"Confirm the return reason and that resolution steps have been exhausted; check the dashboard status.",br:[
        {yn:"do",act:"Note the reason (incompatible / unresolved fault / CX request) and attach supporting proof."}]},
      {q:"Is a return/refund the agreed outcome?",br:[
-       {yn:"yes",act:"Raise on #epc-stores-escalations requesting the return be punched and approved; tag the POCs.",cust:"We'll arrange the pickup and process your return/refund. You'll get updates as it moves."},
+       {yn:"yes",act:"Raise on Slack requesting the return be punched and approved; tag the POCs.",cust:"We'll arrange the pickup and process your return/refund. You'll get updates as it moves."},
        {yn:"no",act:"Continue the relevant SOP before requesting a return."}]}],
    pow:["Return reason","Proof resolution was attempted","Ticket & Customer Request ID"]},
 
@@ -1071,7 +1071,7 @@ let NP_ISSUES=[
      {q:"Check the job/visit status and how many times it was rescheduled or the PX no-showed.",br:[
        {yn:"do",act:"Note the last scheduled date, no-show count, and the customer's availability window."}]},
      {q:"Is a fresh visit still unassigned or the customer highly dissatisfied?",br:[
-       {yn:"yes",act:"Raise on #epc-stores-escalations to assign another PX urgently; tag the POCs with the availability window.",cust:"I'm sorry about the missed visit. We're assigning another professional on priority and will confirm the slot."},
+       {yn:"yes",act:"Raise on Slack to assign another PX urgently; tag the POCs with the availability window.",cust:"I'm sorry about the missed visit. We're assigning another professional on priority and will confirm the slot."},
        {yn:"no",act:"Confirm the next visit date to the customer and keep the case open."}]}],
    pow:["Job/visit status screenshot","No-show count + last scheduled date","Customer availability window"]},
 
@@ -1081,7 +1081,7 @@ let NP_ISSUES=[
      {q:"Check whether a job is created and its current status on the dashboard.",br:[
        {yn:"do",act:"Confirm whether a PX/job is aligned and the expected date."}]},
      {q:"Is the installation delayed beyond the committed TAT or no job aligned?",br:[
-       {yn:"yes",act:"Raise on #epc-stores-escalations to align/expedite the installation; tag the POCs.",cust:"We're aligning your installation on priority and will confirm the visit date shortly."},
+       {yn:"yes",act:"Raise on Slack to align/expedite the installation; tag the POCs.",cust:"We're aligning your installation on priority and will confirm the visit date shortly."},
        {yn:"no",act:"Confirm the scheduled date to the customer and keep the case open."}]}],
    pow:["Job/installation status screenshot","Committed vs current date","Ticket & Customer Request ID"]},
 
@@ -1091,7 +1091,7 @@ let NP_ISSUES=[
      {q:"Capture the customer's exact request/VOC and check the dashboard status.",br:[
        {yn:"do",act:"Log the VOC verbatim and what has already been done."}]},
      {q:"Does it need desk intervention to resolve?",br:[
-       {yn:"yes",act:"Raise on #epc-stores-escalations with the VOC and context; tag the POCs.",cust:"Thank you for the details. I'm escalating this to the right team and will keep you posted."},
+       {yn:"yes",act:"Raise on Slack with the VOC and context; tag the POCs.",cust:"Thank you for the details. I'm escalating this to the right team and will keep you posted."},
        {yn:"no",act:"Resolve on call and log the outcome."}]}],
    pow:["Customer VOC (verbatim)","What was already attempted","Ticket & Customer Request ID"]},
 
@@ -1101,7 +1101,7 @@ let NP_ISSUES=[
      {q:"Verify the payment/refund status and the exact amount and date in dispute.",br:[
        {yn:"do",act:"Capture the payment/refund screenshot and the amount/date."}]},
      {q:"Is the refund overdue beyond TAT or a genuine payment issue?",br:[
-       {yn:"yes",act:"Raise on #epc-stores-escalations with the payment proof for a finance check; tag the POCs.",cust:"I've escalated your payment/refund for a finance check and will update you on the timeline."},
+       {yn:"yes",act:"Raise on Slack with the payment proof for a finance check; tag the POCs.",cust:"I've escalated your payment/refund for a finance check and will update you on the timeline."},
        {yn:"no",act:"Advise the customer of the expected TAT; raise only if it has passed or the customer insists."}]}],
    pow:["Payment/refund screenshot","Amount and date in dispute","Ticket & Customer Request ID"]},
 
@@ -1111,7 +1111,7 @@ let NP_ISSUES=[
      {q:"Check the delivery/pickup status and the AWB/tracking on the order.",br:[
        {yn:"do",act:"Capture the status screenshot and note the tracking ID; for wrong/missing/damaged item, collect photos."}]},
      {q:"Is the delivery/pickup delayed, failing, or the item wrong/damaged?",br:[
-       {yn:"yes",act:"Raise on #epc-stores-escalations to re-align delivery/pickup (Blue Dart / porter) or a replacement; tag the POCs.",cust:"We're re-aligning the logistics on priority and will share the updated tracking with you."},
+       {yn:"yes",act:"Raise on Slack to re-align delivery/pickup (Blue Dart / porter) or a replacement; tag the POCs.",cust:"We're re-aligning the logistics on priority and will share the updated tracking with you."},
        {yn:"no",act:"Confirm the delivery/pickup date to the customer and keep the case open."}]}],
    pow:["Delivery/pickup status screenshot","AWB / tracking ID (or item photos)","Ticket & Customer Request ID"]},
 
@@ -1121,7 +1121,7 @@ let NP_ISSUES=[
      {q:"Confirm the alignment problem with the PX (frame gap, sag, strike alignment) and capture photos/video.",br:[
        {yn:"do",act:"Capture the alignment issue on video/photo and note the PX's assessment."}]},
      {q:"Can it be fixed with a revisit / minor door work the customer permits?",br:[
-       {yn:"yes",act:"Raise on #epc-stores-escalations to align a revisit for alignment correction (get customer permission for any frame work); tag the POCs.",cust:"A technician will visit to correct the alignment. Some minor frame adjustment may be needed with your permission."},
+       {yn:"yes",act:"Raise on Slack to align a revisit for alignment correction (get customer permission for any frame work); tag the POCs.",cust:"A technician will visit to correct the alignment. Some minor frame adjustment may be needed with your permission."},
        {yn:"no",act:"If the customer declines work or it's not feasible, move to Product Incompatible or Return & Refund."}]}],
    pow:["Photos/video of the alignment issue","PX assessment","Ticket & Customer Request ID"]},
 
@@ -1131,8 +1131,8 @@ let NP_ISSUES=[
      {q:"Collect before/after photos and determine whether the damage was PX-caused or customer-side (own carpenter, forced install).",br:[
        {yn:"do",act:"Capture clear damage photos, the PX's account, and any prior no-liability confirmation from the customer."}]},
      {q:"Is UC responsible (PX-caused damage against advice or without warning)?",br:[
-       {yn:"yes",act:"Raise on #epc-stores-escalations as P1 for repair/compensation approval; tag the POCs with all photos and VOC.",cust:"I'm sorry about the damage. I'm escalating this for a repair/compensation review and will update you."},
-       {yn:"no",act:"Share the no-liability context with the desk; raise on #epc-stores-escalations for a decision; tag the POCs."}]}],
+       {yn:"yes",act:"Raise on Slack as P1 for repair/compensation approval; tag the POCs with all photos and VOC.",cust:"I'm sorry about the damage. I'm escalating this for a repair/compensation review and will update you."},
+       {yn:"no",act:"Share the no-liability context with the desk; raise on Slack for a decision; tag the POCs."}]}],
    pow:["Before/after damage photos","PX account + any no-liability confirmation","Ticket & Customer Request ID"]},
 
   {id:"np-critical",cat:"Critical",sev:"r",title:"Critical (social media / Twitter)",tag:"customer",priority:"P1",
@@ -1141,7 +1141,7 @@ let NP_ISSUES=[
      {q:"Capture the exact post/threat and customer VOC; check the dashboard status.",br:[
        {yn:"do",act:"Screenshot the social-media post/handle or the threat, and log the VOC verbatim."}]},
      {q:"Is it live on social media or an imminent public threat?",br:[
-       {yn:"yes",act:"Raise on #epc-stores-escalations as P1 marked CRITICAL with the screenshot and VOC; tag the POCs and flag urgency.",cust:"I completely understand your frustration. I'm escalating this to our senior team right now for the fastest possible resolution."},
+       {yn:"yes",act:"Raise on Slack as P1 marked CRITICAL with the screenshot and VOC; tag the POCs and flag urgency.",cust:"I completely understand your frustration. I'm escalating this to our senior team right now for the fastest possible resolution."},
        {yn:"no",act:"Raise as P1 with the VOC and note the risk of it going public; tag the POCs."}]}],
    pow:["Screenshot of the social-media post / threat","Customer VOC (verbatim)","Ticket & Customer Request ID"]}
 ];
@@ -1345,7 +1345,7 @@ function buildNPDetails(){
       }).join('');
       return '<div class="node"><div class="qh"><span class="qn nomargin">'+n+'</span><div class="qtext">'+esc(st.q)+'</div></div><div class="limbs">'+brs+'</div></div>';
     }).join('')
-      +'<div class="endnode"><span class="qn nomargin">✓</span><div class="etext">Tick what you checked, then raise on #epc-stores-escalations. Your ticks post as a summary in the thread.</div></div>';
+      +'<div class="endnode"><span class="qn nomargin">✓</span><div class="etext">Tick what you checked, then raise on Slack. Your ticks post as a summary in the thread.</div></div>';
     const pow=i.pow.map(p=>'<li>'+esc(p)+'</li>').join('');
     return '<div class="page" id="page-'+i.id+'">'
       +'<button class="back" onclick="goHome()">← Back to the list</button>'
@@ -1355,8 +1355,8 @@ function buildNPDetails(){
         +'<div class="dsay"><span class="cslabel">When to use</span>“'+esc(i.say)+'”</div></div>'
         +'<div class="cols"><div class="flow">'+steps+'</div></div>'
         +'<div class="dfoot">'
-          +'<div class="powbox"><div class="powh"><span class="pi">'+ic('clipboard',15)+'</span>Collect this before raising on #epc-stores-escalations</div><ul>'+pow+'</ul><div class="pownote">Check the dashboard status first — do not duplicate an open escalation.</div></div>'
-          +'<button class="raisebtn" onclick="openNPModal(\''+i.id+'\')">'+ic('send',16)+' Raise on #epc-stores-escalations</button>'
+          +'<div class="powbox"><div class="powh"><span class="pi">'+ic('clipboard',15)+'</span>Collect this before raising on Slack</div><ul>'+pow+'</ul><div class="pownote">Check the dashboard status first — do not duplicate an open escalation.</div></div>'
+          +'<button class="raisebtn" onclick="openNPModal(\''+i.id+'\')">'+ic('send',16)+' Raise on Slack</button>'
           +'<div class="side"><h4>Escalation goes to</h4><div class="poc">'
           +rt.prim.map(k=>pocRow(k,'prim')).join('')+rt.sec.map(k=>pocRow(k,'sec')).join('')
           +'</div></div>'
@@ -1732,11 +1732,26 @@ async function sendRaise(){
   send.disabled=true;send.textContent='Sending…';sok.style.color='';sok.textContent='';
   try{
     const text=buildPreview(true);
-    // 1) post the message
+    // 0) de-dupe threads: if a thread already exists for this order in the channel,
+    //    post the new escalation INTO it so one customer's issues stay in one thread.
+    const orderId=document.getElementById('f-order').value.trim();
+    let parentThreadTs='';
+    if(orderId){
+      send.textContent='Checking for existing thread…';
+      try{
+        const rf=await fetch('/api/raise',{method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({phase:'find-thread',orderId})});
+        const df=await rf.json();
+        if(df&&df.ok&&df.thread_ts)parentThreadTs=df.thread_ts;
+      }catch(e){/* best-effort: fall back to a new message */}
+    }
+    // 1) post the message (threaded into the existing order thread if one was found)
+    send.textContent='Sending…';
     const r1=await fetch('/api/raise',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({phase:'post',text,submitterEmail:AGENT?AGENT.email:'',submitterName:AGENT?AGENT.name:''})});
+      body:JSON.stringify({phase:'post',text,parentThreadTs,submitterEmail:AGENT?AGENT.email:'',submitterName:AGENT?AGENT.name:''})});
     const d1=await r1.json();
     if(!d1.ok)throw new Error(d1.error||'Message failed');
+    const threadRoot=d1.thread_root||d1.ts; // attach media + summary under this thread
     // 2) each file: reserve URL (Vercel) -> upload bytes (extension). Collect file_ids.
     const uploaded=[];
     for(let i=0;i<FILES.length;i++){
@@ -1753,7 +1768,7 @@ async function sendRaise(){
     if(uploaded.length){
       send.textContent='Attaching…';
       const rc=await fetch('/api/raise',{method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({phase:'complete',thread_ts:d1.ts,files:uploaded})});
+        body:JSON.stringify({phase:'complete',thread_ts:threadRoot,files:uploaded})});
       const dc=await rc.json();
       if(!dc.ok)throw new Error('Attach failed: '+(dc.error||'unknown'));
     }
@@ -1761,7 +1776,7 @@ async function sendRaise(){
     const summary = CUR ? ticksSummaryText(CUR.id) : '';
     if(summary){
       await fetch('/api/raise',{method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({phase:'reply',thread_ts:d1.ts,text:summary})});
+        body:JSON.stringify({phase:'reply',thread_ts:threadRoot,text:summary})});
     }
     // 5) log the escalation for the agent dashboard (best-effort, non-blocking)
     logEscalation({type:'Product',
@@ -1773,7 +1788,8 @@ async function sendRaise(){
       escType:(MODE==='unknown'?'Unknown':MODE==='oldersku'?'Older SKU':MODE==='lockout'?'Lockout (critical)':'Known'),
       permalink:d1.permalink||''});
     const permalink=d1.permalink||'';
-    sok.innerHTML=ic('check',14)+' Raised in Slack.'+(permalink?'<a class="gotoslack" href="'+permalink+'" target="_blank" rel="noopener"><svg class="si" viewBox="0 0 24 24" fill="currentColor"><path d="M6 15a2 2 0 1 1-2-2h2v2zm1 0a2 2 0 0 1 4 0v5a2 2 0 1 1-4 0v-5zM9 6a2 2 0 1 1 2-2v2H9zm0 1a2 2 0 0 1 0 4H4a2 2 0 1 1 0-4h5zm9 2a2 2 0 1 1 2 2h-2V9zm-1 0a2 2 0 0 1-4 0V4a2 2 0 1 1 4 0v5zm-2 9a2 2 0 1 1-2 2v-2h2zm0-1a2 2 0 0 1 0-4h5a2 2 0 1 1 0 4h-5z"/></svg>Open thread in Slack</a>':'');
+    const raisedMsg = d1.threaded ? 'Added to the existing thread for this order.' : 'Raised in Slack.';
+    sok.innerHTML=ic('check',14)+' '+raisedMsg+(permalink?'<a class="gotoslack" href="'+permalink+'" target="_blank" rel="noopener"><svg class="si" viewBox="0 0 24 24" fill="currentColor"><path d="M6 15a2 2 0 1 1-2-2h2v2zm1 0a2 2 0 0 1 4 0v5a2 2 0 1 1-4 0v-5zM9 6a2 2 0 1 1 2-2v2H9zm0 1a2 2 0 0 1 0 4H4a2 2 0 1 1 0-4h5zm9 2a2 2 0 1 1 2 2h-2V9zm-1 0a2 2 0 0 1-4 0V4a2 2 0 1 1 4 0v5zm-2 9a2 2 0 1 1-2 2v-2h2zm0-1a2 2 0 0 1 0-4h5a2 2 0 1 1 0 4h-5z"/></svg>Open thread in Slack</a>':'');
     send.innerHTML=SEND_LABEL;
   }catch(err){
     sok.style.color='var(--r)';
@@ -1865,7 +1881,7 @@ function openNPModal(id){
   const rt=(NP_CUR&&NP_ROUTE[NP_CUR.id])||NP_ROUTE._default;
   NP_PRIM=[...rt.prim];NP_SEC=[...rt.sec];
   document.getElementById('np-cat').innerHTML=ic('box',14)+' '+esc(NP_CUR?(NP_CUR.cat===NP_CUR.title?NP_CUR.title:NP_CUR.cat+': '+NP_CUR.title):'Non-product escalation');
-  document.getElementById('np-mtitle').textContent='Raise on #epc-stores-escalations';
+  document.getElementById('np-mtitle').textContent='Raise on Slack'+(NP_CUR&&NP_CUR.id==='np-delivery'?' · #native-locks-delivery':' · #epc-stores-escalations');
   ['np-ticket','np-creq','np-cust','np-tag','np-desc'].forEach(x=>document.getElementById(x).value='');
   document.getElementById('np-tag').value=NP_CUR?(NP_CUR.tag||''):'';
   document.getElementById('np-priority').value=NP_CUR?NP_CUR.priority:'P2';
