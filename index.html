@@ -238,6 +238,8 @@
   body.dark .diagbtn2{color:#4fc79a;border-color:#4fc79a}
   body.dark .diagbtn2:hover{background:#4fc79a;color:#062018}
   .mfoot .diagbtn{background:var(--g)}
+  /* Diagnosed mode: hide all Slack-only fields; agent just fetches by ticket. */
+  #modal.diag-mode .diag-hide{display:none}
   .side{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:17px 18px;margin-top:14px}
   .side h4{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:12px;font-weight:800}
   .side .poc{display:flex;flex-wrap:wrap;gap:16px}
@@ -514,7 +516,7 @@
       <th>When</th><th>Type</th><th>SKU</th><th>City</th><th>Issue bucket</th><th>Description</th><th>Slack</th>
     </tr></thead><tbody id="dash-body"></tbody></table></div>
     <div class="dashwrap" id="dashwrap-diagnosed" style="display:none"><table class="dash"><thead><tr>
-      <th>When</th><th>SKU</th><th>City</th><th>Issue bucket</th><th>Description</th><th>Order ID</th>
+      <th>When</th><th>SKU</th><th>City</th><th>Issue bucket</th><th>Order ID</th>
     </tr></thead><tbody id="dash-body-diag"></tbody></table></div>
   </div>
 
@@ -544,7 +546,7 @@
         <div class="fld"><label>Booking date</label><input id="f-bdate" readonly></div>
         <div class="fld"><label>Installation end date</label><input id="f-iend" readonly></div>
       </div>
-      <div class="twocol">
+      <div class="twocol diag-hide">
         <div class="fld"><label>Lock Serial Number <span style="color:var(--r)">*</span></label>
           <input id="f-lock" placeholder="—">
           <div class="hint" id="f-lock-hint"></div>
@@ -556,14 +558,14 @@
       <div class="fld"><label>Customer Profile ID</label><input id="f-cust" readonly></div>
       <div class="fld"><label>Order ID</label><input id="f-order" readonly></div>
 
-      <div class="fld"><label>Issue Bucket</label><input id="f-bucket"></div>
-      <div class="fld"><label>Issue Description</label><textarea id="f-desc" placeholder="What the customer reported and what was tried"></textarea></div>
-      <div class="fld"><label>POD escalation time</label><input id="f-tat" readonly></div>
+      <div class="fld diag-hide"><label>Issue Bucket</label><input id="f-bucket"></div>
+      <div class="fld diag-hide"><label>Issue Description</label><textarea id="f-desc" placeholder="What the customer reported and what was tried"></textarea></div>
+      <div class="fld diag-hide"><label>POD escalation time</label><input id="f-tat" readonly></div>
 
-      <div class="fld"><label>Primary PoC</label><div class="chips" id="f-prim"></div></div>
-      <div class="fld"><label>Secondary PoC</label><div class="chips" id="f-sec"></div></div>
+      <div class="fld diag-hide"><label>Primary PoC</label><div class="chips" id="f-prim"></div></div>
+      <div class="fld diag-hide"><label>Secondary PoC</label><div class="chips" id="f-sec"></div></div>
 
-      <div class="fld"><label>Proofs (images / videos)</label>
+      <div class="fld diag-hide"><label>Proofs (images / videos)</label>
         <div class="droparea" id="f-drop" onclick="document.getElementById('f-files').click()">
           Click to attach photos / videos, or drag them here
         </div>
@@ -572,7 +574,7 @@
         <div class="hint" id="f-proof-hint"></div>
       </div>
 
-      <div class="fld"><label>Message preview</label><div class="preview" id="f-preview"></div></div>
+      <div class="fld diag-hide"><label>Message preview</label><div class="preview" id="f-preview"></div></div>
     </div>
     <div class="mfoot">
       <button class="sendbtn" id="f-send" onclick="sendRaise()" disabled><span class="ic-inl" style="width:16px;height:16px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4Z"/></svg></span>Send to Slack</button>
@@ -1546,7 +1548,8 @@ function openModalCommon(routeSku,bucketVal,titleOverride){
   if(MODE==='oldersku'){skuEl.readOnly=false;skuEl.placeholder='e.g. Lock S / L1 / L1 Pro';}
   else{skuEl.placeholder='';}
   renderModeBadge();
-  // Toggle the modal CTA: "Send to Slack" vs "Mark as diagnosed" (no Slack post).
+  // Toggle the modal CTA + hide Slack-only fields when in "Diagnosed & resolved" mode.
+  document.getElementById('modal').classList.toggle('diag-mode',DIAG);
   document.getElementById('f-send').style.display=DIAG?'none':'';
   document.getElementById('f-diag-send').style.display=DIAG?'':'none';
   renderChips();buildPreview();updateSendState();
@@ -1746,15 +1749,16 @@ drop.addEventListener('drop',e=>{addFiles(e.dataTransfer.files);});
 function updateSendState(){
   const lock=document.getElementById('f-lock').value.trim();
   const hasLock=!!lock, hasFetch=!!FETCHED;
-  const ok=hasLock&&hasFetch; // proof is now optional (agent can add media in the Slack thread later)
-  document.getElementById('f-send').disabled=!ok;
+  // Diagnosed mode only needs a successful fetch; Slack raise also needs the lock serial.
+  const ok = DIAG ? hasFetch : (hasLock&&hasFetch);
+  document.getElementById('f-send').disabled=!(hasLock&&hasFetch);
   const diagBtn=document.getElementById('f-diag-send');
-  if(diagBtn)diagBtn.disabled=!ok;
+  if(diagBtn)diagBtn.disabled=!hasFetch;
   const w=document.getElementById('f-gatewarn');
   if(ok){w.textContent='';return;}
   const miss=[];
   if(!hasFetch)miss.push('fetch ticket');
-  if(!hasLock)miss.push('lock serial');
+  if(!DIAG&&!hasLock)miss.push('lock serial');
   w.textContent='Required: '+miss.join(' · ');
 }
 
@@ -1852,11 +1856,10 @@ function logDiagnosed(){
   try{
     logEscalation({kind:'diagnosed',type:'Product',
       sku:document.getElementById('f-sku').value,city:document.getElementById('f-city').value,
-      bucket:document.getElementById('f-bucket').value,desc:document.getElementById('f-desc').value,
+      bucket:document.getElementById('f-bucket').value,
       bookingDate:document.getElementById('f-bdate').value,installDate:document.getElementById('f-iend').value,
       customerRequestId:document.getElementById('f-creq').value,sourceOrderId:document.getElementById('f-order').value,
       customerProfileId:document.getElementById('f-cust').value,
-      lockNumber:document.getElementById('f-lock').value,
       summary:summary});
     sok.style.color='';
     sok.innerHTML=ic('check',14)+' Logged as diagnosed & resolved. Nice SOP work.';
@@ -2069,9 +2072,15 @@ function closeDash(){
   document.getElementById(MAIN_TAB==='nonproduct'?'nonproduct':'home').classList.add('on');
   window.scrollTo({top:0,behavior:'smooth'});
 }
+function fmtWhen(ts){
+  if(!ts)return '';
+  const d=new Date(ts);
+  if(isNaN(d.getTime()))return String(ts); // already a readable string from the sheet
+  return d.toLocaleString('en-IN',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit',hour12:true});
+}
 function dashRow(e){
   const type=(e.type||'').toLowerCase().indexOf('non')===0?'Non-Product':'Product';
-  const when=e.ts?new Date(e.ts).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit',hour12:true}):'';
+  const when=fmtWhen(e.ts);
   const link=e.permalink?'<a class="dlink" href="'+esc(e.permalink)+'" target="_blank" rel="noopener">'+ic('link',13)+'Open thread</a>':'—';
   return '<tr><td class="dwhen">'+esc(when)+'</td>'
     +'<td><span class="typechip '+(type==='Product'?'type-prod':'type-np')+'">'+type+'</span></td>'
@@ -2080,11 +2089,11 @@ function dashRow(e){
     +'<td>'+link+'</td></tr>';
 }
 function dashRowDiag(e){
-  const when=e.ts?new Date(e.ts).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit',hour12:true}):'';
+  const when=fmtWhen(e.ts);
   const order=e.sourceOrderId?('<a class="dlink" href="https://ops.urbanclap.com/inventory/product-order/'+encodeURIComponent(e.sourceOrderId)+'" target="_blank" rel="noopener">'+esc(e.sourceOrderId)+'</a>'):'—';
   return '<tr><td class="dwhen">'+esc(when)+'</td>'
     +'<td class="dsku">'+(esc(e.sku)||'—')+'</td><td>'+(esc(e.city)||'—')+'</td>'
-    +'<td>'+(esc(e.bucket)||'—')+'</td><td class="ddesc">'+(esc(e.desc)||'—')+'</td>'
+    +'<td>'+(esc(e.bucket)||'—')+'</td>'
     +'<td>'+order+'</td></tr>';
 }
 function setDashView(view){
@@ -2098,7 +2107,7 @@ function loadDash(){
   setDashView('raised');
   document.getElementById('dc-raised').textContent='';document.getElementById('dc-diag').textContent='';
   body.innerHTML='<tr><td colspan="7" class="dashempty">Loading your escalations…</td></tr>';
-  bodyD.innerHTML='<tr><td colspan="6" class="dashempty">Loading…</td></tr>';
+  bodyD.innerHTML='<tr><td colspan="5" class="dashempty">Loading…</td></tr>';
   if(!LOG_WEBAPP_URL){
     body.innerHTML='<tr><td colspan="7" class="dashempty">Dashboard logging is not configured yet.</td></tr>';return;
   }
@@ -2107,7 +2116,7 @@ function loadDash(){
   // Raised escalations
   fetch(base+'email='+email).then(r=>r.json()).then(rows=>{
     if(!Array.isArray(rows)||!rows.length){body.innerHTML='<tr><td colspan="7" class="dashempty">No escalations yet. Ones you raise will appear here.</td></tr>';return;}
-    rows.sort((a,b)=>String(b.ts||'').localeCompare(String(a.ts||'')));
+    // Server already returns newest-first; do not re-sort (ts is now a display string).
     body.innerHTML=rows.map(dashRow).join('');
     document.getElementById('dc-raised').textContent=rows.length;
   }).catch(()=>{
@@ -2115,12 +2124,12 @@ function loadDash(){
   });
   // Diagnosed & resolved (pre-Slack)
   fetch(base+'kind=diagnosed&email='+email).then(r=>r.json()).then(rows=>{
-    if(!Array.isArray(rows)||!rows.length){bodyD.innerHTML='<tr><td colspan="6" class="dashempty">No diagnoses logged yet. Use “Diagnosed & resolved” when you close an issue on call.</td></tr>';return;}
-    rows.sort((a,b)=>String(b.ts||'').localeCompare(String(a.ts||'')));
+    if(!Array.isArray(rows)||!rows.length){bodyD.innerHTML='<tr><td colspan="5" class="dashempty">No diagnoses logged yet. Use “Diagnosed & resolved” when you close an issue on call.</td></tr>';return;}
+    // Server already returns newest-first; do not re-sort (ts is now a display string).
     bodyD.innerHTML=rows.map(dashRowDiag).join('');
     document.getElementById('dc-diag').textContent=rows.length;
   }).catch(()=>{
-    bodyD.innerHTML='<tr><td colspan="6" class="dashempty">Could not load right now. Try again shortly.</td></tr>';
+    bodyD.innerHTML='<tr><td colspan="5" class="dashempty">Could not load right now. Try again shortly.</td></tr>';
   });
 }
 
