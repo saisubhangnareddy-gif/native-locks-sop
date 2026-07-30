@@ -613,6 +613,15 @@
         <div class="hint">Auto-filled from ops on Fetch. You can edit it if needed.</div>
       </div>
       <div class="twocol">
+        <div class="fld"><label>SKU</label><input id="np-sku" readonly></div>
+        <div class="fld"><label>City</label><input id="np-city" readonly></div>
+      </div>
+      <div class="twocol">
+        <div class="fld"><label>Booking date</label><input id="np-bdate" readonly></div>
+        <div class="fld"><label>Installation end date</label><input id="np-iend" readonly></div>
+      </div>
+      <div class="fld"><label>Issue Bucket</label><input id="np-bucket" readonly></div>
+      <div class="twocol">
         <div class="fld"><label>L1 Complaint Tag</label><input id="np-tag" placeholder="e.g. product / delivery / payment"></div>
         <div class="fld"><label>Priority</label>
           <select id="np-priority"><option>P1</option><option>P2</option><option>P3</option></select>
@@ -1964,6 +1973,11 @@ npTagLine+
 B('Ticket ID (with link)')+'\n'+ticketLink+'\n\n'+
 B('Customer Request ID (with link)')+'\n'+opsLink('https://ops.urbanclap.com/requests/',val('np-creq'))+'\n\n'+
 B('Customer User ID (with link)')+'\n'+opsLink('https://ops.urbanclap.com/customers/profile/',val('np-cust'))+'\n\n'+
+B('SKU')+'\n'+(val('np-sku')||'—')+'\n\n'+
+B('City')+'\n'+(val('np-city')||'—')+'\n\n'+
+B('Booking date')+'\n'+(val('np-bdate')||'—')+'\n\n'+
+B('Installation end date')+'\n'+(val('np-iend')||'—')+'\n\n'+
+B('Issue Bucket')+'\n'+(val('np-bucket')||'—')+'\n\n'+
 B('L1 Complaint Tag')+'\n'+(val('np-tag')||'—')+'\n\n'+
 B('Priority')+'\n'+(val('np-priority')||'—')+'\n\n'+
 B('Ticket Description')+'\n'+(val('np-desc')||'—')+'\n\n'+
@@ -1997,6 +2011,11 @@ function fetchNPTicket(){
     document.getElementById('np-creq').value=creq;
     // Customer profile id if ops surfaced it; otherwise left for manual entry.
     if(ops.customerUserId&&!document.getElementById('np-cust').value.trim())document.getElementById('np-cust').value=ops.customerUserId;
+    // City from ops; SKU + dates enriched from the sheet (same as the product flow).
+    document.getElementById('np-city').value=cap(ops.city)||'';
+    document.getElementById('np-sku').value=(sheet&&sheet.SKU_NAME)||'';
+    document.getElementById('np-bdate').value=(sheet&&(prettyDate(sheet.BDATE_FINAL)||sheet.BDATE_FINAL))||'';
+    document.getElementById('np-iend').value=(sheet&&(prettyDate(sheet.INSTALLATION_END)||sheet.INSTALLATION_END))||'';
     msg.className='fetchmsg ok';
     msg.textContent=creq?'Details fetched. Add the Customer User ID if needed, then send.':'Ticket resolved. Enter the Customer Request ID / User ID manually if needed.';
     npBuildPreview();npUpdateSend();
@@ -2016,7 +2035,8 @@ function openNPModal(id){
   NP_PRIM=[...rt.prim];NP_SEC=[...rt.sec];
   document.getElementById('np-cat').innerHTML=ic('box',14)+' '+esc(NP_CUR?(NP_CUR.cat===NP_CUR.title?NP_CUR.title:NP_CUR.cat+': '+NP_CUR.title):'Non-product escalation');
   document.getElementById('np-mtitle').textContent='Raise on Slack'+(NP_CUR&&NP_CUR.id==='np-delivery'?' · #native-locks-delivery':' · #epc-stores-escalations');
-  ['np-ticket','np-creq','np-cust','np-tag','np-desc'].forEach(x=>document.getElementById(x).value='');
+  ['np-ticket','np-creq','np-cust','np-tag','np-desc','np-sku','np-city','np-bdate','np-iend'].forEach(x=>document.getElementById(x).value='');
+  document.getElementById('np-bucket').value=NP_CUR?NP_CUR.cat:'';
   document.getElementById('np-tag').value=NP_CUR?(NP_CUR.tag||''):'';
   document.getElementById('np-priority').value=NP_CUR?NP_CUR.priority:'P2';
   document.getElementById('np-tat').value=nowStamp();
@@ -2034,6 +2054,7 @@ function openNPSpecial(){
   NP_MODE='other'; // tag this escalation as unlisted (set after openNPModal, which resets it)
   document.getElementById('np-cat').innerHTML=ic('box',14)+' Other / issue not in any bucket';
   document.getElementById('np-tag').value='other';
+  document.getElementById('np-bucket').value='Other (unlisted)';
   npBuildPreview();
 }
 ['np-ticket','np-creq','np-cust','np-tag','np-desc','np-priority'].forEach(id=>{
@@ -2095,12 +2116,13 @@ async function sendNPRaise(){
       await fetch('/api/raise',{method:'POST',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({phase:'reply',channelTarget:npTarget,thread_ts:d1.ts,text:npSummary})});
     }
-    logEscalation({type:'Non-Product',sku:'',city:'',
-      bucket:(NP_CUR?NP_CUR.cat:document.getElementById('np-tag').value),desc:document.getElementById('np-desc').value,
-      bookingDate:'',installDate:'',
-      customerRequestId:document.getElementById('np-creq').value,sourceOrderId:'',
+    logEscalation({type:'Non-Product',
+      sku:document.getElementById('np-sku').value,city:document.getElementById('np-city').value,
+      bucket:(document.getElementById('np-bucket').value||(NP_CUR?NP_CUR.cat:document.getElementById('np-tag').value)),desc:document.getElementById('np-desc').value,
+      bookingDate:document.getElementById('np-bdate').value,installDate:document.getElementById('np-iend').value,
+      customerRequestId:document.getElementById('np-creq').value,sourceOrderId:(NP_FETCHED&&NP_FETCHED.sourceOrderId)||'',
       customerProfileId:document.getElementById('np-cust').value,lockNumber:'',
-      escType:'Non-Product',
+      escType:(NP_MODE==='other'?'Non-Product (unlisted)':'Non-Product'),
       summary:npSummary,
       permalink:d1.permalink||''});
     const permalink=d1.permalink||'';
