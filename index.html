@@ -736,15 +736,7 @@ function submitterTag(forSend){
 
 let ISSUES=[
   /* ===================== ULTRA ===================== */
-  {sku:"ultra",id:"u-install",sev:"g",freq:32,title:"Auto-lock / mortise alignment after install",say:"Lock does not auto-lock, or the door does not align properly",
-   media:{type:"video",label:"Reference: auto-lock check",video:"/videos/auto-lock-check.mp4",driveId:"1QU5razgr9jS_dCHwC4dzQkOXNvMTt_Sk",img:"images/nylon-piece.jpg",imgcap:"Nylon piece (strike-plate part)"},
-   steps:[
-     {q:"On an open door, check if auto-lock is working using the reference video shown.",br:[
-       {yn:"yes",act:"Strike plate needs adjustment. Raise on Slack to align a revisit and nylon-piece dispatch.",cust:"Your lock is working correctly. The door frame just needs a small adjustment, and we will send a technician with the required part to set it right in one visit."},
-       {yn:"no",act:"Follow the SOP for the auto-lock issue (Gap too much).",cust:"Let me run one more quick check so we identify this precisely and fix it the right way."}]}],
-   pow:["A video of the open-door and closed-door test","The Lock Ultra number from inside the battery box","The Order ID"]},
-
-  {sku:"ultra",id:"u-gap",sev:"g",freq:17,title:"Auto-lock not working (gap too much)",say:"The 3 bolts do not lock when I close the door",
+  {sku:"ultra",id:"u-gap",sev:"g",freq:32,title:"Auto-lock not working (gap too much)",say:"The 3 bolts do not lock when I close the door",
    media:{type:"video",label:"Reference: auto-lock check",video:"/videos/auto-lock-check.mp4",driveId:"1W40cW8YCapAoGSXgILfJ90ZFYoxHXNZF",img:"images/nylon-piece.jpg",imgcap:"Nylon piece (strike-plate part)"},
    steps:[
      {q:"On an open door, check if auto-lock is working using the reference video shown.",br:[
@@ -941,21 +933,21 @@ let ISSUES=[
 
   {sku:"pro",id:"p-notif",sev:"a",freq:24,title:"Too many notifications",say:"The customer is getting multiple and frequent notifications (RF / lock bell)",
    steps:[
-     {q:"First, check if the RF (doorbell) module is installed at the customer's place.",br:[
-       {yn:"yes",act:"RF is installed. The extra notifications can come from the RF/doorbell side, so check the door-bell branch below as well. Follow the next steps.",cust:"Let me check your doorbell unit and the lock together to find what is sending the extra alerts."},
-       {yn:"no",act:"No RF installed, so the notifications are coming from the lock bell only. Focus on the lock-bell steps below.",cust:"Since there is no doorbell unit, the extra alerts are from the lock itself. Let me check that."}]},
-     {q:"Do this: open App settings - Diagnosis and run the diagnostic flow to see which source (RF / lock bell) is firing the notifications.",br:[
-       {yn:"do",act:"Note the diagnostic result — it tells you whether the lock bell or the RF/door bell is the source. Use it to pick the correct branch below.",cust:"I am running a quick diagnostic in the app to pinpoint what is triggering the notifications."}]},
      {q:"Is the issue specific to the lock bell? (Check app history.)",br:[
        {yn:"yes",act:"Create a revisit for lock firmware flashing.",cust:"A technician will apply a quick update on a visit, and the notifications will return to normal."}]},
      {q:"Is the issue persistent / still exists after flashing?",br:[
        {yn:"yes",act:"Immediately raise on Slack for a lock replacement. This happens due to the glass on the front panel causing excess sensitivity, creating false lock-bell notifications.",cust:"To fully resolve this, we will arrange a replacement and a technician visit so the notifications work correctly."}]},
      {q:"Is the issue specific to the door bell?",br:[
        {yn:"yes",act:"Create an electrician revisit to check the door bell for short circuits. A minor short circuit or current leak can trigger the RF bell module while the customer's bell does not ring.",cust:"We will arrange an electrician to check the doorbell wiring, which is causing the extra notifications, and set it right."}]}],
-   pow:["Screenshots of the notifications and app history","The diagnostic result (RF / lock bell)","The Lock Pro number"]},
+   pow:["Screenshots of the notifications and app history","The Lock Pro number"]},
 
   {sku:"pro",id:"p-rf",sev:"a",freq:22,title:"No doorbell notification (RF)",say:"The customer is not getting notifications from the doorbell",
    steps:[
+     {q:"First, check if the RF (doorbell) module is installed at the customer's place.",br:[
+       {yn:"yes",act:"RF module is installed. Continue with the checks below.",cust:"Let me check your doorbell unit and the lock together."},
+       {yn:"no",act:"No RF module installed, so doorbell notifications can't come through. If the customer has a compatible bell, create a revisit for RF module installation; if there's a Smart/battery bell or a range issue, ask the customer to book an electrician (reimbursable).",cust:"There's no doorbell unit installed yet — that's why the alerts aren't coming. Let me arrange getting it set up for you."}]},
+     {q:"Do this: open App settings - Diagnosis and run the diagnostic flow to confirm everything is set correctly. (Note: this flow does not identify the source of the issue.)",br:[
+       {yn:"do",act:"Run the app Diagnosis flow and confirm the setup looks correct, then continue with the checks below.",cust:"I'm running a quick diagnostic in the app to make sure everything is set up correctly."}]},
      {q:"Are notifications received from the lock bell?",br:[
        {yn:"no",act:"The issue is due to weak Wi-Fi / pairing. Follow the steps for the Wi-Fi issue.",cust:"The notifications depend on the Wi-Fi connection. Let us strengthen the Wi-Fi so they come through reliably."},
        {yn:"yes",act:'Check in App settings - Diagnosis if the RF status shows a "Green Tick".',cust:"Let me check the doorbell unit's status in the app with you."}]},
