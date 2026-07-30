@@ -1930,6 +1930,7 @@ function logDiagnosed(){
   }
 }
 let NP_CUR=null, NP_FILES=[], NP_PRIM=[], NP_SEC=[], NP_FETCHED=null, NP_TICKET='';
+let NP_MODE='bucket'; // 'bucket' | 'other' (issue not matching any listed bucket)
 function npRenderChips(){
   const all=NP_POC_KEYS.filter(k=>POCS[k]);
   function draw(el,selected){
@@ -1957,7 +1958,9 @@ function npBuildPreview(forSend){
   const B = forSend ? (t)=>'*'+t+'*' : (t)=>t;
   const val=id=>document.getElementById(id).value.trim();
   const ticketLink = NP_TICKET ? ('https://ops.urbanclap.com/tickets/'+NP_TICKET) : (val('np-ticket')?('https://ops.urbanclap.com/tickets/'+val('np-ticket')):'—');
+  const npTagLine = NP_MODE==='other' ? (B('Escalation Type')+'\nUnlisted (does not fit any bucket)\n\n') : '';
   const txt=
+npTagLine+
 B('Ticket ID (with link)')+'\n'+ticketLink+'\n\n'+
 B('Customer Request ID (with link)')+'\n'+opsLink('https://ops.urbanclap.com/requests/',val('np-creq'))+'\n\n'+
 B('Customer User ID (with link)')+'\n'+opsLink('https://ops.urbanclap.com/customers/profile/',val('np-cust'))+'\n\n'+
@@ -2006,6 +2009,7 @@ function fetchNPTicket(){
 }
 function openNPModal(id){
   if(!AGENT){document.getElementById('gate').classList.remove('hide');return;}
+  NP_MODE='bucket';
   NP_CUR=NP_ISSUES.find(i=>i.id===id)||null;
   NP_FILES=[];NP_FETCHED=null;NP_TICKET='';
   const rt=(NP_CUR&&NP_ROUTE[NP_CUR.id])||NP_ROUTE._default;
@@ -2027,6 +2031,7 @@ function closeNPModal(){document.getElementById('npmodal').classList.remove('on'
    with no preset bucket, routed to the default POCs; agent describes the issue. */
 function openNPSpecial(){
   openNPModal('__other__'); // no match -> NP_CUR=null, routes via NP_ROUTE._default
+  NP_MODE='other'; // tag this escalation as unlisted (set after openNPModal, which resets it)
   document.getElementById('np-cat').innerHTML=ic('box',14)+' Other / issue not in any bucket';
   document.getElementById('np-tag').value='other';
   npBuildPreview();
