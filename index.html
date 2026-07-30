@@ -1692,8 +1692,11 @@ function applyFetched(ops,sheet){
   document.getElementById('f-city').value=cap(ops.city)||'';
   // enrichment from the sheet (SKU, lock, dates)
   const sku=sheet?sheet.SKU_NAME:'', bdate=sheet?sheet.BDATE_FINAL:'', iend=sheet?sheet.INSTALLATION_END:'';
-  // In older-SKU mode the agent types the SKU (Lock S / L1 …); don't overwrite it.
-  if(MODE!=='oldersku')document.getElementById('f-sku').value=sku||'';
+  // Auto-fill SKU when the sheet has it. In older-SKU mode the field is free-text, so only
+  // fill it if the sheet has a value AND the agent hasn't already typed one (don't overwrite).
+  const skuEl=document.getElementById('f-sku');
+  if(MODE!=='oldersku'){skuEl.value=sku||'';}
+  else if(sku&&!skuEl.value.trim()){skuEl.value=sku;}
   document.getElementById('f-bdate').value=prettyDate(bdate)||bdate||'';
   document.getElementById('f-iend').value=prettyDate(iend)||iend||'';
   const lockRaw=sheet?(sheet.LOCK_NUMBER||''):'';
