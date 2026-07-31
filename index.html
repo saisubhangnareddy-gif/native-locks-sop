@@ -727,6 +727,7 @@ const NP_ROUTE={
   "np-config":{prim:["manu"],sec:["harsha","jyothi"]},
   "np-return":{prim:["manu"],sec:["kunal","sita"]},
   "np-pxnoshow":{prim:["aditya","sindhu"],sec:["sanaulla","sudaksha","kunal"]},
+  "np-vsat":{prim:["sindhu","sudaksha","manu"],sec:["aditya","kunal"]},
   "np-customer":{prim:["manu"],sec:["kunal","sita"]},
   "np-payment":{prim:["manu"],sec:["kunal","sita"]},
   "np-delivery":{prim:["rohit","sindhu"],sec:["sudaksha","kunal"]},
@@ -910,6 +911,18 @@ let ISSUES=[
        {yn:"no",act:"Collect these details:\n1) Has the issue been occurring since day 1, or after a few days of installation?\n2) Any time-based pattern to the alarm (for example, only mornings or afternoons)?\n3) Any images received in the intruder alert notification? If yes, take screenshots from the customer.\nWith these details and POW, raise on Slack immediately to align a revisit for a front-panel installation recheck.",cust:"Let me note a few details so we fix this precisely. A technician will visit and recheck the installation to stop the alarm."}]}],
    pow:["A video of the alarm going off","Screenshots of any alert images","The Lock Ultra number"]},
 
+  {sku:"ultra",id:"u-spare",sev:"a",freq:5,title:"Missing / damaged part",say:"A spare part is missing or broken in the lock (not the whole lock)",
+   steps:[
+     {q:"Probe what part is missing/broken and ask the customer to share clear images. Which cohort is it?",br:[
+       {yn:"do",act:"Confirm the exact part with photos, then pick the cohort below: partner has not visited yet, partner is at the customer's place, or partner has already left."}]},
+     {q:"Partner has NOT visited yet (customer opened the lock and found a damaged/missing part).",br:[
+       {yn:"yes",act:"Ask the customer to wait and let the pro visit and verify. Keep the case on follow-up, park for the installation time. Call the partner to check: if not damaged, inform and close; if damaged, follow the \"partner at Cx place\" steps.",cust:"Let's have our professional check it on the visit. I'll keep your ticket open until then."}]},
+     {q:"Partner is AT the customer's place (damage found during installation).",br:[
+       {yn:"yes",act:"Confirm the PX has the spare available and the customer agrees to the change — if both align, get the spare changed and initiate the spare payment. If the customer refuses repair, pitch replacement and follow the replacement SOP. Note: a spare-only issue is not eligible for return.",cust:"If the part can be swapped now, our professional will do it. Otherwise we'll arrange a replacement for you."}]},
+     {q:"Partner has LEFT (spare damaged but the lock was installed / left as-is).",br:[
+       {yn:"yes",act:"Confirm with the PX what is damaged and whether it was reported. Check the customer's expectation:\n• Replace → follow the replacement SOP.\n• Repair → arrange the same pro's revisit after his call to fix it.\n• Return (extreme cases only) → first try to convince for replacement, then follow the replacement SOP.\nOrder any needed spare via the Spare Form (delivery team updates the AWB on the spare sheet); if the part isn't on the form, raise on Slack.",cust:"We'll get the damaged part sorted — either a technician revisit to fix it or a replacement, whichever suits you."}]}],
+   pow:["Clear photos of the missing/damaged part","Which cohort (partner not visited / at place / left)","The Lock Ultra number & Order ID"]},
+
   /* ===================== PRO ===================== */
   {sku:"pro",id:"p-mortise",sev:"a",freq:298,title:"Mortise unlock / passage mode issue",say:"Green light on fingerprint but door does not unlock, or door unlocks without any authorization, or sometimes does not unlock",
    steps:[
@@ -1058,7 +1071,19 @@ let ISSUES=[
        {yn:"no",act:"Check if you can register a second RFID card. If yes and it unlocks, raise on Slack to align a replacement of the one faulty card.",cust:"Let us try your second card. If that works, we will send you a replacement for the one that does not."}]},
      {q:"Do both RFID cards fail to register?",br:[
        {yn:"yes",act:"Raise on Slack with POW for the team to confirm if a lock replacement is required.",cust:"We will get this checked and arrange the right fix for you."}]}],
-   pow:["A video of the registration attempt","The Lock Pro number"]}
+   pow:["A video of the registration attempt","The Lock Pro number"]},
+
+  {sku:"pro",id:"p-spare",sev:"a",freq:5,title:"Missing / damaged part",say:"A spare part is missing or broken in the lock (not the whole lock)",
+   steps:[
+     {q:"Probe what part is missing/broken and ask the customer to share clear images. Which cohort is it?",br:[
+       {yn:"do",act:"Confirm the exact part with photos, then pick the cohort below: partner has not visited yet, partner is at the customer's place, or partner has already left."}]},
+     {q:"Partner has NOT visited yet (customer opened the lock and found a damaged/missing part).",br:[
+       {yn:"yes",act:"Ask the customer to wait and let the pro visit and verify. Keep the case on follow-up, park for the installation time. Call the partner to check: if not damaged, inform and close; if damaged, follow the \"partner at Cx place\" steps.",cust:"Let's have our professional check it on the visit. I'll keep your ticket open until then."}]},
+     {q:"Partner is AT the customer's place (damage found during installation).",br:[
+       {yn:"yes",act:"Confirm the PX has the spare available and the customer agrees to the change — if both align, get the spare changed and initiate the spare payment. If the customer refuses repair, pitch replacement and follow the replacement SOP. Note: a spare-only issue is not eligible for return.",cust:"If the part can be swapped now, our professional will do it. Otherwise we'll arrange a replacement for you."}]},
+     {q:"Partner has LEFT (spare damaged but the lock was installed / left as-is).",br:[
+       {yn:"yes",act:"Confirm with the PX what is damaged and whether it was reported. Check the customer's expectation:\n• Replace → follow the replacement SOP.\n• Repair → arrange the same pro's revisit after his call to fix it.\n• Return (extreme cases only) → first try to convince for replacement, then follow the replacement SOP.\nOrder any needed spare via the Spare Form (delivery team updates the AWB on the spare sheet); if the part isn't on the form, raise on Slack.",cust:"We'll get the damaged part sorted — either a technician revisit to fix it or a replacement, whichever suits you."}]}],
+   pow:["Clear photos of the missing/damaged part","Which cohort (partner not visited / at place / left)","The Lock Pro number & Order ID"]}
 ];
 
 const SEV={g:["sev-g","dg","var(--g)","Usually solved on call"],a:["sev-a","da","var(--a)","Sometimes solved on call"],r:["sev-r","dr","var(--r)","Follow all the steps"]};
@@ -1144,6 +1169,18 @@ let NP_ISSUES=[
        {yn:"yes",act:"Raise on Slack to get a PX assigned within 6 hours — loop in Aditya, Sanaulla and Sudaksha. Share the hub, the customer's availability window, and the no-show/reschedule count.",cust:"I'm escalating on priority to get a professional assigned to you within a few hours. Thank you for your patience."}]}],
    pow:["Job/visit status screenshot from ops","No-show / no-response / reschedule count + last scheduled date","Hub + customer availability window","Ticket & Customer Request ID"]},
 
+  {id:"np-vsat",cat:"VSAT No Show / Installation Pending",sev:"r",title:"VSAT No Show / Installation Pending",tag:"delivery",priority:"P1",
+   say:"VSAT professional didn't show up, or a VSAT installation is pending / not yet aligned",
+   steps:[
+     {q:"Open the job/visit on the ops portal and confirm it's a VSAT case — is a VSAT PX assigned, and is it a no-show or an installation still pending?",br:[
+       {yn:"do",act:"Note whether a VSAT PX is assigned, the last scheduled date/slot, the no-show status, and the customer's availability window."}]},
+     {q:"Is the VSAT visit no-showed / unassigned, or the installation pending past TAT?",br:[
+       {yn:"yes",act:"Raise on Slack to assign/expedite a VSAT PX on priority; tag the POCs (Sindhu, Sudaksha, Manuranjan) with the customer's availability window.",cust:"I'm sorry about the delay. We're assigning a professional on priority and will confirm the slot shortly."},
+       {yn:"no",act:"A VSAT visit is assigned and upcoming. Confirm the scheduled slot to the customer and keep the case open; re-check on the visit day.",cust:"Your visit is scheduled — a professional is assigned and will reach you in the confirmed slot."}]},
+     {q:"Is it a repeat failure or is the customer highly dissatisfied?",br:[
+       {yn:"yes",act:"Flag it as a repeat/urgent VSAT failure when raising on Slack; ask the POCs for a different PX/hub on priority.",cust:"I understand this has happened before — I'm escalating to get a professional assigned quickly."}]}],
+   pow:["VSAT job/visit status screenshot from ops","No-show status + last scheduled date","Hub + customer availability window","Ticket & Customer Request ID"]},
+
   {id:"np-customer",cat:"Customer-Led",sev:"a",title:"Customer-Led",tag:"customer",priority:"P2",
    say:"Customer request, dissatisfaction, or demand that needs desk intervention (not covered by another bucket)",
    steps:[
@@ -1169,17 +1206,15 @@ let NP_ISSUES=[
    pow:["Payment/refund screenshot from the ops product request page / Payment dashboard","Amount, date, and RRN (and EMI plan if applicable)","Ticket & Customer Request ID"]},
 
   {id:"np-delivery",cat:"Delivery-Led",sev:"a",title:"Delivery-Led",tag:"delivery",priority:"P2",
-   say:"Delivery delay/status, wrong product delivered, missing/broken spare part, or pickup / reverse-logistics stuck",
+   say:"Delivery delay/status, wrong product delivered, or pickup / reverse-logistics stuck",
    steps:[
      {q:"Open the product order page on the ops portal and check the delivery/pickup status, AWB/tracking, and the SLA. Ask the customer to allow 15-30 mins (you may need the logistics POCs).",br:[
        {yn:"do",act:"From the ops product order page, capture the delivery/pickup status and note the AWB/tracking ID. Cross-check the installation date — a lock not delivered at least the day before (or within 4 hrs of the install slot) means the installation must be rescheduled."}]},
-     {q:"Is a spare part or accessory missing / broken (not the whole lock)?",br:[
-       {yn:"yes",act:"Confirm the part with photos. Order it via the Spare Form (delivery team updates the AWB on the spare sheet); if it's a part not on the form, raise on Slack. If a PX is at/visiting the customer and has the spare, get it changed and initiate the spare payment. Note: a spare-only issue is not eligible for return — pitch replacement if the customer refuses repair.",cust:"I've arranged the correct part for you — we'll share the dispatch/visit details shortly."}]},
      {q:"Was the WRONG product delivered?",br:[
        {yn:"yes",act:"If the customer ordered the correct product but the wrong one arrived: punch a replacement. If the customer ordered the wrong lock themselves and now wants a different one: they can order the new lock, and we take the return once the new lock is installed.",cust:"Let me sort the correct lock out for you and arrange the swap."}]},
      {q:"For a delivery delay / status query — what's the SLA state?",br:[
        {yn:"do",act:"• SLA NOT breached: inform the customer of the delivery TAT and the installation date, then close — and also post a note on Slack.\n• SLA breached: raise on Slack and tag Rohit Singh Bisht; park the ticket for 24 hrs.\n• No tracking ID available: raise on Slack and tag Rohit Singh Bisht; park for 24 hrs.",cust:"Here's your delivery status and the expected installation date. If it's running behind our timeline, I've escalated it to our logistics team to expedite."}]}],
-   pow:["Delivery/pickup status + SLA screenshot from the ops product order page","AWB / tracking ID (or note if unavailable)","Photos of the wrong/missing/broken item or spare part","Ticket & Customer Request ID"]},
+   pow:["Delivery/pickup status + SLA screenshot from the ops product order page","AWB / tracking ID (or note if unavailable)","Ticket & Customer Request ID"]},
 
   {id:"np-dooralign",cat:"Door Alignment Issue",sev:"a",title:"Door Alignment Issue",tag:"product",priority:"P2",
    say:"Door/frame alignment prevents smooth locking, or alignment work is needed for installation",
@@ -1842,6 +1877,16 @@ function uploadViaExtension(uploadUrl,file){
 }
 async function sendRaise(){
   const send=document.getElementById('f-send'),sok=document.getElementById('f-sok');
+  // Require at least one SOP step to be ticked (any single Yes/No/Done counts) so the
+  // testing summary is never empty. Only enforced when the issue actually has steps.
+  if(CUR&&CUR.steps&&CUR.steps.length){
+    const ticks=SOP_TICKS[CUR.id];
+    if(!ticks||!Object.keys(ticks).length){
+      sok.style.color='var(--r)';
+      sok.innerHTML=ic('alert',14)+' Tick the correct SOP steps (Yes/No) tested with customer before raising or clicking on diagnosed button (steps will be checked if correctly tested from POW) - it posts as the testing summary. Close this box, tick the correct steps, then raise or diagnose.';
+      return;
+    }
+  }
   send.disabled=true;send.textContent='Sending…';sok.style.color='';sok.textContent='';
   try{
     const text=buildPreview(true);
@@ -1920,6 +1965,15 @@ async function sendRaise(){
 function logDiagnosed(){
   const btn=document.getElementById('f-diag-send'),sok=document.getElementById('f-sok');
   if(!FETCHED){return;}
+  // Require at least one ticked SOP step so the diagnosis has a testing summary.
+  if(CUR&&CUR.steps&&CUR.steps.length){
+    const ticks=SOP_TICKS[CUR.id];
+    if(!ticks||!Object.keys(ticks).length){
+      sok.style.color='var(--r)';
+      sok.innerHTML=ic('alert',14)+' Tick the correct SOP steps (Yes/No) tested with customer before raising or clicking on diagnosed button (steps will be checked if correctly tested from POW) - it posts as the testing summary. Close this box, tick the correct steps, then raise or diagnose.';
+      return;
+    }
+  }
   btn.disabled=true;btn.textContent='Saving…';sok.style.color='';sok.textContent='';
   const summary = CUR ? ticksSummaryText(CUR.id) : '';
   try{
