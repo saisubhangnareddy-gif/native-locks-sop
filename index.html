@@ -232,6 +232,8 @@
   .raisebtn:hover{filter:brightness(.96);transform:translateY(-1px)}
   /* CTA row: "Diagnosed & resolved" (green outline) beside "Raise on Slack" */
   .ctarow{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:14px}
+  .ctaerr{margin-top:10px;font-size:13px;font-weight:700;color:var(--r);line-height:1.5;display:flex;align-items:flex-start;gap:7px}
+  .ctaerr:empty{display:none}
   .ctarow .raisebtn{margin-top:0}
   .diagbtn2{display:inline-flex;align-items:center;background:transparent;color:var(--g);border:1.5px solid var(--g);font-size:15px;font-weight:800;padding:12px 20px;border-radius:11px;transition:.14s}
   .diagbtn2:hover{background:var(--g);color:#fff;transform:translateY(-1px)}
@@ -1326,6 +1328,7 @@ function buildDetails(){
           +'<div class="powbox"><div class="powh"><span class="pi">'+ic('clipboard',15)+'</span>Collect this before raising on Slack (POW)</div><ul>'+pow+'</ul><div class="pownote">Do not raise the ticket until you have collected all of the above.</div></div>'
           +'<div class="ctarow"><button class="diagbtn2" onclick="openDiagnosed(\''+i.id+'\')">'+ic('check',16)+' Diagnosed &amp; resolved</button>'
           +'<button class="raisebtn" onclick="openModal(\''+i.id+'\')">'+ic('send',16)+' Raise on Slack</button></div>'
+          +'<div class="ctaerr" id="ctaerr-'+i.id+'"></div>'
           +'<div class="side"><h4>Ticket goes to</h4><div class="poc">'
           +rt.prim.map(k=>pocRow(k,'prim')).join('')+rt.sec.map(k=>pocRow(k,'sec')).join('')
           +'</div></div>'
@@ -1367,6 +1370,7 @@ function buildLockout(){
         +'<div class="powbox"><div class="powh"><span class="pi">'+ic('clipboard',15)+'</span>Collect this before raising on Slack (POW)</div><ul>'+pow+'</ul><div class="pownote">Do not raise the ticket until you have collected all of the above.</div></div>'
         +'<div class="ctarow"><button class="diagbtn2" onclick="openDiagnosed(\'lockout\')">'+ic('check',16)+' Diagnosed &amp; resolved</button>'
         +'<button class="raisebtn" onclick="openModal(\'lockout\')">'+ic('send',16)+' Raise on Slack</button></div>'
+        +'<div class="ctaerr" id="ctaerr-lockout"></div>'
         +'<div class="side"><h4>Ticket goes to</h4><div class="poc">'
         +[...rt.prim,'charanjeet'].map(k=>pocRow(k,'prim')).join('')+rt.sec.map(k=>pocRow(k,'sec')).join('')
         +'</div></div>'
@@ -1407,6 +1411,9 @@ function paintTicks(issueId){
     limb.classList.toggle('ticked',!!sel);
     const t=limb.querySelector('.tick'); if(t)t.classList.toggle('on',!!sel);
   });
+  // Clear the SOP-page "tick a step" error once any step is ticked.
+  const errEl=document.getElementById('ctaerr-'+issueId);
+  if(errEl&&Object.keys(map).length)errEl.textContent='';
 }
 /* Clear a SOP's ticks (after a successful raise/diagnose) so the next case starts fresh. */
 function clearTicks(issueId){
@@ -1599,6 +1606,7 @@ function renderChips(){
 }
 function openModal(id){
   if(!AGENT){document.getElementById('gate').classList.remove('hide');return;}
+  if(!sopTickGate(id))return;
   DIAG=false;
   CUR=(id==='lockout')?LOCKOUT_ISSUE:ISSUES.find(i=>i.id===id);
   MODE=(id==='lockout')?'lockout':'product';
@@ -1608,10 +1616,25 @@ function openModal(id){
    For issues the agent resolved by following the SOP before needing to escalate. */
 function openDiagnosed(id){
   if(!AGENT){document.getElementById('gate').classList.remove('hide');return;}
+  if(!sopTickGate(id))return;
   DIAG=true;
   CUR=(id==='lockout')?LOCKOUT_ISSUE:ISSUES.find(i=>i.id===id);
   MODE=(id==='lockout')?'lockout':'product';
   openModalCommon(CUR.sku,CUR.title);
+}
+/* Gate on the SOP PAGE: block Raise/Diagnosed unless at least one SOP step is ticked.
+   Any single Yes/No/Done counts. Issues without steps (unknown/older SKU) always pass. */
+function sopTickGate(id){
+  const issue=(id==='lockout')?LOCKOUT_ISSUE:ISSUES.find(i=>i.id===id);
+  const errEl=document.getElementById('ctaerr-'+id);
+  if(!issue||!issue.steps||!issue.steps.length){if(errEl)errEl.textContent='';return true;}
+  const ticks=SOP_TICKS[id];
+  if(ticks&&Object.keys(ticks).length){if(errEl)errEl.textContent='';return true;}
+  if(errEl){
+    errEl.innerHTML=ic('alert',14)+' Tick the correct SOP steps (Yes/No) tested with customer before raising or clicking on diagnosed button (steps will be checked if correctly tested from POW) - it posts as the testing summary. Tick the correct steps, then raise or diagnose.';
+    errEl.scrollIntoView({behavior:'smooth',block:'center'});
+  }
+  return false;
 }
 /* Special escalation entry points that reuse the same modal/format but tag differently:
    - 'unknown'  -> unknown product issue (tagged "Unknown Issue")
@@ -1877,16 +1900,6 @@ function uploadViaExtension(uploadUrl,file){
 }
 async function sendRaise(){
   const send=document.getElementById('f-send'),sok=document.getElementById('f-sok');
-  // Require at least one SOP step to be ticked (any single Yes/No/Done counts) so the
-  // testing summary is never empty. Only enforced when the issue actually has steps.
-  if(CUR&&CUR.steps&&CUR.steps.length){
-    const ticks=SOP_TICKS[CUR.id];
-    if(!ticks||!Object.keys(ticks).length){
-      sok.style.color='var(--r)';
-      sok.innerHTML=ic('alert',14)+' Tick the correct SOP steps (Yes/No) tested with customer before raising or clicking on diagnosed button (steps will be checked if correctly tested from POW) - it posts as the testing summary. Close this box, tick the correct steps, then raise or diagnose.';
-      return;
-    }
-  }
   send.disabled=true;send.textContent='Sending…';sok.style.color='';sok.textContent='';
   try{
     const text=buildPreview(true);
@@ -1965,15 +1978,6 @@ async function sendRaise(){
 function logDiagnosed(){
   const btn=document.getElementById('f-diag-send'),sok=document.getElementById('f-sok');
   if(!FETCHED){return;}
-  // Require at least one ticked SOP step so the diagnosis has a testing summary.
-  if(CUR&&CUR.steps&&CUR.steps.length){
-    const ticks=SOP_TICKS[CUR.id];
-    if(!ticks||!Object.keys(ticks).length){
-      sok.style.color='var(--r)';
-      sok.innerHTML=ic('alert',14)+' Tick the correct SOP steps (Yes/No) tested with customer before raising or clicking on diagnosed button (steps will be checked if correctly tested from POW) - it posts as the testing summary. Close this box, tick the correct steps, then raise or diagnose.';
-      return;
-    }
-  }
   btn.disabled=true;btn.textContent='Saving…';sok.style.color='';sok.textContent='';
   const summary = CUR ? ticksSummaryText(CUR.id) : '';
   try{
