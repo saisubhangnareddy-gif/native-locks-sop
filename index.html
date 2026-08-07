@@ -696,7 +696,7 @@ const POCS={
   titas:{n:"Titas Dewan",r:"POD backup",in:"TD",c:"#5c9ad1",id:"U08RZ4X1PFC",av:"https://ca.slack-edge.com/T034MTGTM-U08RZ4X1PFC-411a00d0fa7b-72"},
   charanjeet:{n:"Charanjeet",r:"Lockout POC",in:"CJ",c:"#6b8cff",id:"U02RP2WL5KL"}
 };
-const ROUTE={ultra:{prim:["manu","harsha"],sec:["kunal","sita","subhang","titas"]},pro:{prim:["manu","jyothi"],sec:["kunal","sita","subhang","titas"]}};
+const ROUTE={ultra:{prim:["manu","harsha"],sec:["kunal","subhang"]},pro:{prim:["manu","jyothi"],sec:["kunal","subhang"]}};
 
 /* Non-product POCs — a different roster from the product desk, taken from who is actually
    tagged in #epc-stores-escalations. Extends POCS with the people who only appear there. */
@@ -728,16 +728,16 @@ const NP_POC_KEYS=["sindhu","sudaksha","aditya","sanaulla","rohit","yash","arpit
 const NP_ROUTE={
   "np-incompatible":{prim:["manu","sindhu"],sec:["sudaksha","kunal"]},
   "np-config":{prim:["manu"],sec:["harsha","jyothi"]},
-  "np-return":{prim:["manu"],sec:["kunal","sita"]},
+  "np-return":{prim:["manu"],sec:["kunal"]},
   "np-pxnoshow":{prim:["aditya","sindhu"],sec:["sanaulla","sudaksha","kunal"]},
   "np-vsat":{prim:["sindhu","sudaksha","manu"],sec:["aditya","kunal"]},
-  "np-customer":{prim:["manu"],sec:["kunal","sita"]},
-  "np-payment":{prim:["manu"],sec:["kunal","sita"]},
+  "np-customer":{prim:["manu"],sec:["kunal"]},
+  "np-payment":{prim:["manu"],sec:["kunal"]},
   "np-delivery":{prim:["rohit","sindhu"],sec:["sudaksha","yash","kunal"]},
-  "np-dooralign":{prim:["manu","sindhu"],sec:["sita","sudaksha"]},
-  "np-doordamage":{prim:["manu","kunal"],sec:["sita","arpit"]},
-  "np-critical":{prim:["manu","kunal"],sec:["sita","subhang"]},
-  _default:{prim:["manu"],sec:["kunal","sita"]}
+  "np-dooralign":{prim:["manu","sindhu"],sec:["sudaksha"]},
+  "np-doordamage":{prim:["manu","kunal"],sec:["arpit"]},
+  "np-critical":{prim:["manu","kunal"],sec:["subhang"]},
+  _default:{prim:["manu"],sec:["kunal"]}
 };
 /* The sent message uses a {{SUBMITTER}} placeholder; Vercel resolves it to a Slack
    mention via users.lookupByEmail (needs users:read.email scope). If that scope isn't
@@ -1373,7 +1373,7 @@ function buildLockout(){
         +'<button class="raisebtn" onclick="openModal(\'lockout\')">'+ic('send',16)+' Raise on Slack</button></div>'
         +'<div class="ctaerr" id="ctaerr-lockout"></div>'
         +'<div class="side"><h4>Ticket goes to</h4><div class="poc">'
-        +[...rt.prim,'charanjeet'].map(k=>pocRow(k,'prim')).join('')+rt.sec.map(k=>pocRow(k,'sec')).join('')
+        +[...rt.prim,'charanjeet'].map(k=>pocRow(k,'prim')).join('')+[...rt.sec,'sita'].map(k=>pocRow(k,'sec')).join('')
         +'</div></div>'
       +'</div>'
     +'</div>';
@@ -1652,6 +1652,7 @@ function openModalCommon(routeSku,bucketVal,titleOverride){
   FETCHED=null;FILES=[];
   PRIM=[...ROUTE[routeSku].prim];SEC=[...ROUTE[routeSku].sec];
   if(MODE==='lockout'&&!PRIM.includes('charanjeet'))PRIM.push('charanjeet'); // Charanjeet is a primary POC for lockouts
+  if(MODE==='lockout'&&!SEC.includes('sita'))SEC.push('sita'); // Sita Ram is a secondary POC for lockouts only
   SME=(MODE==='lockout')?[...SME_KEYS]:[]; // all SMEs pre-selected for Lockout, none otherwise
   document.getElementById('mtitle').textContent=(DIAG?'Diagnosed & resolved: ':'Raise on Slack: ')+(titleOverride||bucketVal);
   document.getElementById('f-ticket').value='';
