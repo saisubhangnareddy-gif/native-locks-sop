@@ -706,7 +706,8 @@ const NP_POCS_EXTRA={
   aditya:{n:"Aditya Agrawal",r:"PX / installation",in:"AA",c:"#6b8cff",id:"U08V019A4RX",av:"https://ca.slack-edge.com/T034MTGTM-U08V019A4RX-e1abb33b121e-72"},
   arpit:{n:"Arpit Singh",r:"Team lead (IE)",in:"AS",c:"#c08a3e",id:"U02ADG9GX5E",av:"https://ca.slack-edge.com/T034MTGTM-U02ADG9GX5E-23f365518ed7-72"},
   sanaulla:{n:"Sanaulla",r:"PX availability (6hr)",in:"SA",c:"#3aa06a",id:"U07Q9C33B0V"},
-  rohit:{n:"Rohit Singh Bisht",r:"Logistics / delivery",in:"RB",c:"#c08a3e",id:"U06T72X8KQS"}
+  rohit:{n:"Rohit Singh Bisht",r:"Logistics / delivery",in:"RB",c:"#c08a3e",id:"U06T72X8KQS"},
+  yash:{n:"Yash Jhamb",r:"Delivery",in:"YJ",c:"#4bb8cf",id:"U08B2BWG8AC"}
 };
 /* SMEs (subject-matter experts) — optional to tag on any escalation, auto-selected only
    for Lockout cases. Mentions need each Slack member id. Fill the "id" values below. */
@@ -722,7 +723,7 @@ const SME_KEYS=["anek","manohara","amirul","janmajay","chandan","vadlaraju"];
 Object.assign(POCS,SME_POCS);
 Object.assign(POCS,NP_POCS_EXTRA);
 /* Ordered list shown as selectable chips in the non-product modal. */
-const NP_POC_KEYS=["sindhu","sudaksha","aditya","sanaulla","rohit","arpit","manu","kunal","jyothi","sita","titas","subhang"];
+const NP_POC_KEYS=["sindhu","sudaksha","aditya","sanaulla","rohit","yash","arpit","manu","kunal","jyothi","sita","titas","subhang"];
 /* Default primary/secondary per bucket id (falls back to the generic default). */
 const NP_ROUTE={
   "np-incompatible":{prim:["manu","sindhu"],sec:["sudaksha","kunal"]},
@@ -732,7 +733,7 @@ const NP_ROUTE={
   "np-vsat":{prim:["sindhu","sudaksha","manu"],sec:["aditya","kunal"]},
   "np-customer":{prim:["manu"],sec:["kunal","sita"]},
   "np-payment":{prim:["manu"],sec:["kunal","sita"]},
-  "np-delivery":{prim:["rohit","sindhu"],sec:["sudaksha","kunal"]},
+  "np-delivery":{prim:["rohit","sindhu"],sec:["sudaksha","yash","kunal"]},
   "np-dooralign":{prim:["manu","sindhu"],sec:["sita","sudaksha"]},
   "np-doordamage":{prim:["manu","kunal"],sec:["sita","arpit"]},
   "np-critical":{prim:["manu","kunal"],sec:["sita","subhang"]},
