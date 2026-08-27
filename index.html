@@ -1181,7 +1181,7 @@ let NP_ISSUES=[
      {q:"Open the job on ops portal, confirm VSAT case — VSAT PX assigned? No-show or install still pending?",br:[
        {yn:"do",act:"Note whether a VSAT PX is assigned, last scheduled date/slot, no-show status, customer's availability window."}]},
      {q:"VSAT visit no-showed / unassigned, or installation pending past TAT?",br:[
-       {yn:"yes",act:"Raise on Slack to assign/expedite a VSAT PX on priority; tag Sindhu, Sudaksha, Manuranjan with the availability window.",cust:"I'm sorry about the delay. We're assigning a professional on priority and will confirm the slot shortly."},
+       {yn:"yes",act:"Raise on Slack to assign/expedite a VSAT PX on priority; tag Sindhu, Manuranjan with the availability window.",cust:"I'm sorry about the delay. We're assigning a professional on priority and will confirm the slot shortly."},
        {yn:"no",act:"VSAT visit assigned & upcoming. Confirm the slot to the customer, keep case open; re-check on visit day.",cust:"Your visit is scheduled — a professional is assigned and will reach you in the confirmed slot."}]},
      {q:"Repeat failure or customer highly dissatisfied?",br:[
        {yn:"yes",act:"Flag as a repeat/urgent VSAT failure when raising on Slack; ask POCs for a different PX/hub on priority.",cust:"I understand this has happened before — I'm escalating to get a professional assigned quickly."}]}],
