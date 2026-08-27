@@ -1827,12 +1827,15 @@ function buildPreview(forSend){
   const creq=document.getElementById('f-creq').value, order=document.getElementById('f-order').value;
   const cust=document.getElementById('f-cust').value;
   const lock=document.getElementById('f-lock').value.trim()||'—';
+  const tId=document.getElementById('f-ticket').value.trim();
+  const ticketLink = tId ? ('https://ops.urbanclap.com/tickets/'+tId) : '—';
   const tagLine = MODE==='unknown' ? (B('Escalation Type')+'\nUnknown Issue\n\n')
                 : MODE==='oldersku' ? (B('Escalation Type')+'\nOlder SKU\n\n')
                 : MODE==='lockout' ? (B('Escalation Type')+'\n:rotating_light: CRITICAL — Customer Lockout\n\n')
                 : '';
   const txt=
 tagLine+
+B('Ticket ID (with link)')+'\n'+ticketLink+'\n\n'+
 B('Customer Request ID with link')+'\n'+(creq?('https://ops.urbanclap.com/requests/'+creq):'—')+'\n\n'+
 B('Customer Profile ID with link')+'\n'+opsLink('https://ops.urbanclap.com/customers/profile/',cust)+'\n\n'+
 B('Order ID with link')+'\n'+(order?('https://ops.urbanclap.com/inventory/product-order/'+order):'—')+'\n\n'+
@@ -1851,7 +1854,7 @@ B('Request submitted by')+' : '+submitterTag(forSend);
   if(!forSend)document.getElementById('f-preview').textContent=txt;
   return txt;
 }
-['f-bucket','f-desc','f-tat','f-lock','f-sku','f-city','f-bdate','f-iend','f-creq','f-cust','f-order'].forEach(id=>{
+['f-ticket','f-bucket','f-desc','f-tat','f-lock','f-sku','f-city','f-bdate','f-iend','f-creq','f-cust','f-order'].forEach(id=>{
   document.addEventListener('input',e=>{if(e.target&&e.target.id===id){buildPreview();updateSendState();}});
 });
 
